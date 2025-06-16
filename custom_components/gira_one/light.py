@@ -1,6 +1,6 @@
 """Platform for Gira One Light entities."""
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -13,6 +13,7 @@ from homeassistant.components.light import (
     LightEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -101,15 +102,15 @@ class GiraLight(LightEntity):
             identifiers={(DOMAIN, self.unique_id)}, # Links to the function itself as a device
             name=self.name,
             manufacturer="Gira",
-            model=function_data.get("channelType", "Gira Function"), # e.g. de.gira.schema.channels.KNX.Dimmer [cite: 102]
-            via_device=(DOMAIN, config_entry.unique_id or config_entry.data[CONF_HOST]), # Links to the main Gira hub device
-            sw_version=function_data.get("functionType") # e.g. de.gira.schema.functions.KNX.Light [cite: 102]
+            model=function_data.get("channelType", "Gira Function"), # e.g. de.gira.schema.channels.KNX.Dimmer
+            via_device=(DOMAIN, config_entry.unique_id or config_entry.data[CONF_HOST]), # Links to the main Gira One server
+            sw_version=function_data.get("functionType") # e.g. de.gira.schema.functions.KNX.Light
         )
 
         self._data_points: Dict[str, Dict[str, Any]] = {
             dp["name"]: dp for dp in function_data.get("dataPoints", [])
         }
-        # Example: self._data_points = {"OnOff": {"uid": "a02a", ...}, "Brightness": {"uid": "a02b", ...}} [cite: 102]
+        # Example: self._data_points = {"OnOff": {"uid": "a02a", ...}, "Brightness": {"uid": "a02b", ...}}
 
 
         self._attr_is_on = None # Initially unknown
@@ -124,7 +125,7 @@ class GiraLight(LightEntity):
         # Callbacks will update state later.
         # This can be made part of async_added_to_hass
         # For now, values will be None until first callback or manual update.
-        _LOGGER.debug("Initialized GiraLight %s with data points: %s", self.name, self._data_points.keys())
+        _LOGGER.debug("Initialized Gira Light %s with data points: %s", self.name, self._data_points.keys())
 
 
     def _update_supported_color_modes_and_features(self) -> None:
@@ -147,7 +148,7 @@ class GiraLight(LightEntity):
             # Could be RGB or HS, HA prefers HS for color wheel usually
             supported_color_modes.add(ColorMode.HS) # Or RGBW/RGBWW if white DPs exist
             # If DP_WHITE exists, could indicate RGBW.
-            # Check channelType for "DimmerRGBW" [cite: 115] or "DimmerWhite" [cite: 116]
+            # Check channelType for "DimmerRGBW" or "DimmerWhite"
             channel_type = self._function_data.get("channelType", "")
             if "RGBW" in channel_type and DP_WHITE in self._data_points:
                  supported_color_modes.add(ColorMode.RGBW) # If a dedicated white channel exists
@@ -203,13 +204,12 @@ class GiraLight(LightEntity):
         )
         # Request initial state for all relevant data points
         # This can be optimized to a single call if get_value supported multiple UIDs in one go,
-        # or if we fetch values for the whole function UID. [cite: 88]
-        # Let's try fetching for the function UID.
+        # or if we fetch values for the whole function UID.
         try:
             _LOGGER.debug("Requesting initial state for light function UID %s", self.unique_id)
-            # The API GET /api/values/<uid> where UID can be a function [cite: 88]
+            # The API GET /api/values/<uid> where UID can be a function
             # returns all data point values for that function.
-            # Response: {"values": [{"uid": "<dp_uid>", "value": "<val>"}]} [cite: 89]
+            # Response: {"values": [{"uid": "<dp_uid>", "value": "<val>"}]}
             data = await self._api.get_value(self.unique_id)
             if data and "values" in data:
                 for dp_value_info in data["values"]:
@@ -246,7 +246,7 @@ class GiraLight(LightEntity):
                     # Gira brightness 0-100, HA 0-255
                     self._attr_brightness = int(float(parsed_value) * 2.55) if parsed_value is not None else None
                     if self._attr_brightness != original_brightness: changed = True
-                elif dp_name == DP_COLOR_TEMPERATURE: # Value in Kelvin [cite: 116] (DimmerWhite channel)
+                elif dp_name == DP_COLOR_TEMPERATURE: # Value in Kelvin (DimmerWhite channel)
                     self._attr_color_temp_kelvin = int(parsed_value) if parsed_value is not None else None
                     if self._attr_color_temp_kelvin != original_color_temp: changed = True
                 # Add RGB/HS handling
@@ -366,7 +366,7 @@ class GiraLight(LightEntity):
                      # Only turning on, no other attributes
                      await self._api.set_value(on_off_dp_uid, 1)
                 else:
-                     await self._api.set_multiple_values(payloads) # [cite: 90]
+                     await self._api.set_multiple_values(payloads)
                 self._attr_is_on = True # Optimistic update
             except Exception as e:
                 _LOGGER.error("Error turning on light %s: %s", self.name, e)
@@ -393,5 +393,5 @@ class GiraLight(LightEntity):
 
         self.async_write_ha_state()
 
-    # Implement other methods like async_update if polling is ever needed.
+    # TODO: Implement other methods like async_update if polling is ever needed.
     # For now, callbacks handle updates.
