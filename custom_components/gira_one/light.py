@@ -121,9 +121,7 @@ class GiraLight(LightEntity):
             model=function_data.get(
                 "functionType", "Unknown Gira Function"
             ),  # e.g. de.gira.schema.functions.KNX.Light
-            model_id=function_data.get(
-                "uid"
-            ),
+            model_id=function_data.get("uid"),
             via_device=(
                 DOMAIN,
                 config_entry.unique_id or config_entry.data[CONF_HOST],

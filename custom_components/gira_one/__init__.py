@@ -113,7 +113,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
     except GiraApiAuthError as e:
         _LOGGER.warning(
-            "Authentication error while fetching detailed server info. Using fallbacks.", e
+            "Authentication error while fetching detailed server info. Using fallbacks.",
+            e,
         )
     except Exception as e:  # Catch any other unexpected error
         _LOGGER.error(
@@ -121,7 +122,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
     # Register device
-    device_name = server_details.get("deviceName") or ui_config.get("deviceName") or host
+    device_name = (
+        server_details.get("deviceName") or ui_config.get("deviceName") or host
+    )
     model_name = server_details.get("deviceType") or "Unknown Gira Device"
     sw_version = server_details.get("deviceVersion") or "Unknown"
     hw_version = server_details.get("info") or "Unknown"
@@ -129,9 +132,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     device_registry = dr.async_get(hass)
     device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={
-            (DOMAIN, entry.unique_id or host)
-        },
+        identifiers={(DOMAIN, entry.unique_id or host)},
         name=device_name,
         manufacturer="Gira",
         model=model_name,

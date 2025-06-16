@@ -287,9 +287,7 @@ class GiraApiClient:
         """Get the server details from info endpoint."""
         if not self._token:
             raise GiraApiAuthError("Token not available for get_server_details.")
-        status, data = await self._request(
-            "GET", f"/{API_VERSION}"
-        )
+        status, data = await self._request("GET", f"/{API_VERSION}")
         if status == 200:
             return data
         raise GiraApiRequestError(
