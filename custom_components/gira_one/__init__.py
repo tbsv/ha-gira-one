@@ -123,8 +123,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register device
     device_name = server_details.get("deviceName") or ui_config.get("deviceName") or host
     model_name = server_details.get("deviceType") or "Unknown Gira Device"
-    sw_version = server_details.get("deviceVersion") or ui_config.get("deviceVersion") or "Unknown"
-    hw_version = server_details.get("info")
+    sw_version = server_details.get("deviceVersion") or "Unknown"
+    hw_version = server_details.get("info") or "Unknown"
 
     device_registry = dr.async_get(hass)
     device_registry.async_get_or_create(
@@ -135,8 +135,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         name=device_name,
         manufacturer="Gira",
         model=model_name,
-        sw_version=sw_version,
-        hw_version=hw_version,
+        sw_version=sw_version if sw_version else None,
+        hw_version=hw_version if hw_version else None,
     )
 
     # Setup platforms

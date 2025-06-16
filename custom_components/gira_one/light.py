@@ -119,15 +119,15 @@ class GiraLight(LightEntity):
             name=self.name,
             manufacturer="Gira",
             model=function_data.get(
-                "channelType", "Gira Function"
-            ),  # e.g. de.gira.schema.channels.KNX.Dimmer
+                "functionType", "Unknown Gira Function"
+            ),  # e.g. de.gira.schema.functions.KNX.Light
+            model_id=function_data.get(
+                "uid"
+            ),
             via_device=(
                 DOMAIN,
                 config_entry.unique_id or config_entry.data[CONF_HOST],
             ),  # Links to the main Gira One server
-            sw_version=function_data.get(
-                "functionType"
-            ),  # e.g. de.gira.schema.functions.KNX.Light
         )
 
         self._data_points: Dict[str, Dict[str, Any]] = {

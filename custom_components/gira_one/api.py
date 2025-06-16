@@ -301,7 +301,7 @@ class GiraApiClient:
         if not self._token:
             raise GiraApiAuthError("Token not available for get_ui_config.")
         # expand to get all necessary details
-        params = {"expand": "dataPointFlags,parameters,locations,trades"}
+        params = {"expand": "dataPointFlags,locations,trades"}
         status, data = await self._request(
             "GET", f"/{API_VERSION}/uiconfig", params=params
         )

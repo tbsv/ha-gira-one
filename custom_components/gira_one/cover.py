@@ -107,10 +107,15 @@ class GiraCover(CoverEntity):
             name=self.name,
             manufacturer="Gira",
             model=function_data.get(
-                "channelType"
-            ),  # e.g., de.gira.schema.channels.BlindWithPos
-            via_device=(DOMAIN, config_entry.unique_id or config_entry.data[CONF_HOST]),
-            sw_version=function_data.get("functionType"),
+                "functionType", "Unknown Gira Function"
+            ),  # e.g. de.gira.schema.functions.Covering
+            model_id=function_data.get(
+                "uid"
+            ),
+            via_device=(
+                DOMAIN,
+                config_entry.unique_id or config_entry.data[CONF_HOST],
+            ),  # Links to the main Gira One server
         )
 
         self._data_points: Dict[str, Dict[str, Any]] = {
@@ -348,7 +353,7 @@ class GiraCover(CoverEntity):
         _LOGGER.debug("Cover %s: Stopping", self.name)
         # For KNX, stopping is often done by sending a "stop" command to the "Step" GA,
         # or re-sending the current target position if positionable.
-        # The Gira API doc  marks Up-Down and Step-Up-Down as -W- (Write Only).
+        # The Gira API documentation marks Up-Down and Step-Up-Down as -W- (Write Only).
         # If Position is settable, resending current position is a common stop method.
         if (
             self.supported_features & CoverEntityFeature.SET_POSITION

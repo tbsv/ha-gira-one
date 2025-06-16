@@ -104,9 +104,16 @@ class GiraClimate(ClimateEntity):
             identifiers={(DOMAIN, self.unique_id)},
             name=self.name,
             manufacturer="Gira",
-            model=self._channel_type,
-            via_device=(DOMAIN, config_entry.unique_id or config_entry.data[CONF_HOST]),
-            sw_version=function_data.get("functionType"),
+            model=function_data.get(
+                "functionType", "Unknown Gira Function"
+            ),  # e.g. de.gira.schema.functions.KNX.HeatingCooling
+            model_id=function_data.get(
+                "uid"
+            ),
+            via_device=(
+                DOMAIN,
+                config_entry.unique_id or config_entry.data[CONF_HOST],
+            ),  # Links to the main Gira One server
         )
 
         self._data_points: Dict[str, Dict[str, Any]] = {
