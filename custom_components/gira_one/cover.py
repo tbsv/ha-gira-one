@@ -1,4 +1,4 @@
-"""Platform for Gira IoT Cover entities."""
+"""Platform for Gira One Cover entities."""
 import logging
 from typing import Any, Dict, Optional
 

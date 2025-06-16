@@ -1,4 +1,4 @@
-"""Platform for Gira IoT Light entities."""
+"""Platform for Gira One Light entities."""
 import logging
 from typing import Any, Dict, Optional, Tuple
 
