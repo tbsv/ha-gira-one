@@ -140,7 +140,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.http.register_view(GiraValueCallbackView(hass, entry.entry_id))
 
     try:
-        await api_client.register_callbacks(service_callback_url, value_callback_url) # [cite: 56]
+        await api_client.register_callbacks(service_callback_url, value_callback_url)
         _LOGGER.info("Gira callbacks registered successfully with the device.")
     except GiraApiRequestError as e:
         _LOGGER.error("Failed to register Gira callbacks with the device: %s. Real-time updates will not work.", e)
@@ -158,11 +158,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         client: GiraApiClient = hass.data[DOMAIN][entry.entry_id].get(DATA_API_CLIENT)
         if client:
             try:
-                await client.remove_callbacks() # [cite: 60]
+                await client.remove_callbacks()
             except Exception as e:
                 _LOGGER.error("Error removing Gira callbacks: %s", e)
             try:
-                await client.unregister_client() # [cite: 54]
+                await client.unregister_client()
             except Exception as e:
                 _LOGGER.error("Error unregistering Gira client: %s", e)
 
@@ -195,12 +195,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if api_client:
         try:
             _LOGGER.info("Attempting to remove callbacks from Gira device.")
-            await api_client.remove_callbacks() # [cite: 60]
+            await api_client.remove_callbacks()
         except Exception as e:
             _LOGGER.error("Error removing Gira callbacks during unload: %s", e)
         try:
             _LOGGER.info("Attempting to unregister client from Gira device.")
-            await api_client.unregister_client() # [cite: 54]
+            await api_client.unregister_client()
         except Exception as e:
             _LOGGER.error("Error unregistering Gira client during unload: %s", e)
 
@@ -233,7 +233,7 @@ class BaseGiraCallbackView(HomeAssistantView):
 
         _LOGGER.debug("Received Gira callback on %s: %s", self.url, data)
 
-        # Verify token if present in callback data [cite: 62, 67]
+        # Verify token if present in callback data
         # This is important to ensure the callback is for our registered client
         expected_token = None
         api_client: GiraApiClient = self.hass.data.get(DOMAIN, {}).get(self.entry_id, {}).get(DATA_API_CLIENT)
@@ -243,7 +243,7 @@ class BaseGiraCallbackView(HomeAssistantView):
 
         if not expected_token:
             _LOGGER.warning("No API client or token found for entry %s to verify callback.", self.entry_id)
-            # According to Gira docs, if client responds with 404, API implicitly unregisters client [cite: 62, 67]
+            # According to API documentation, if client responds with 404, API implicitly unregisters client
             # This seems like a good place if we can't find our client.
             return self.json_message("Client not configured or token missing", status_code=404)
 
@@ -254,13 +254,13 @@ class BaseGiraCallbackView(HomeAssistantView):
                 expected_token, callback_token
             )
             # If token is mismatched, it's a security concern.
-            # Gira docs specify 404 for client de-registration [cite: 62, 67]
+            # API documentation specifies 404 for client de-registration
             return self.json_message("Token mismatch", status_code=404)
 
         # Process the events
         await self.process_events(data.get("events", []), api_client)
 
-        return self.json({}, status_code=200) # Always return 200 OK if processed [cite: 62, 67]
+        return self.json({}, status_code=200) # Always return 200 OK if processed
 
     @callback
     async def process_events(self, events: list, api_client: GiraApiClient):
@@ -275,23 +275,23 @@ class GiraServiceCallbackView(BaseGiraCallbackView):
 
     @callback
     async def process_events(self, events: list, api_client: GiraApiClient):
-        """Process service events. [cite: 62]"""
+        """Process service events."""
         for event_data in events:
             event_type = event_data.get("event")
             _LOGGER.info("Processing Gira service event: %s", event_type)
 
-            if event_type == EVENT_TYPE_TEST: # [cite: 64]
+            if event_type == EVENT_TYPE_TEST:
                 _LOGGER.info("Received 'test' service event from Gira API.")
-            elif event_type == EVENT_TYPE_STARTUP: # [cite: 64]
+            elif event_type == EVENT_TYPE_STARTUP:
                 _LOGGER.info("Gira device reported 'startup'.")
                 # Potentially re-verify connection or fetch fresh status
-            elif event_type == EVENT_TYPE_RESTART: # [cite: 65]
+            elif event_type == EVENT_TYPE_RESTART:
                 _LOGGER.info("Gira device reported 'restart'.")
                 # Might need to re-register callbacks after restart, or API client.
-            elif event_type == EVENT_TYPE_PROJECT_CONFIG_CHANGED: # [cite: 65]
+            elif event_type == EVENT_TYPE_PROJECT_CONFIG_CHANGED:
                 _LOGGER.info("Gira device reported 'projectConfigChanged'. UI config might not have changed.")
-                # As per docs, direct reaction not useful as server might be locked [cite: 66]
-            elif event_type == EVENT_TYPE_UI_CONFIG_CHANGED: # [cite: 67]
+                # As per API documentation, direct reaction not useful as server might be locked]
+            elif event_type == EVENT_TYPE_UI_CONFIG_CHANGED:
                 _LOGGER.warning("Gira device reported 'uiConfigChanged'. Reloading configuration.")
                 # This is a significant event. We need to fetch the new UI config and
                 # potentially remove/re-add entities. This is complex.
