@@ -1,12 +1,10 @@
 """Gira One integration."""
-import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.network import get_url, NoURLAvailableError
 from homeassistant.components.http import HomeAssistantView
@@ -21,8 +19,8 @@ from .const import (
     DOMAIN,
     PLATFORMS,
     CONF_HOST,
-    CONF_PASSWORD,
     CONF_USERNAME,
+    CONF_PASSWORD,
     DATA_API_CLIENT,
     DATA_UI_CONFIG,
     DATA_LISTENERS,
@@ -44,7 +42,7 @@ SIGNAL_UI_CONFIG_CHANGED = f"{DOMAIN}_ui_config_changed"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Gira IoT from a config entry."""
+    """Set up Gira One from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN].setdefault(entry.entry_id, {})
 
@@ -60,7 +58,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if access_token and client_id:
         # If we have a token from config_flow, try to use it.
         # The GiraApiClient needs a way to be initialized with an existing token.
-        # Let's add a method or property to set it.
         api_client._token = access_token # Direct access for now, consider setter
         api_client._client_id = client_id
         _LOGGER.info("Using existing token and client_id from config entry.")
@@ -73,10 +70,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Verify token is still valid by fetching UI config, or re-register if needed
         try:
             _LOGGER.debug("Attempting to fetch UI config with stored token.")
-            ui_config = await api_client.get_ui_config() # [cite: 71]
-        except GiraApiAuthError: # Token might be invalid [cite: 25]
+            ui_config = await api_client.get_ui_config()
+        except GiraApiAuthError: # Token might be invalid
             _LOGGER.warning("Initial token seems invalid or expired, attempting to re-register client.")
-            new_token = await api_client.register_client(client_id) # Re-register [cite: 44]
+            new_token = await api_client.register_client(client_id) # Re-register
             if new_token:
                 # Persist the new token
                 new_data = {**entry.data, "access_token": new_token}
@@ -86,13 +83,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             else:
                 raise GiraApiAuthError("Failed to re-register client and obtain a new token.")
 
-        _LOGGER.info("Successfully connected to Gira API and fetched UI config.")
+        _LOGGER.info("Successfully connected to Gira IoT API and fetched UI config.")
 
     except GiraApiAuthError:
-        _LOGGER.error("Authentication failed for Gira IoT. Please check credentials.")
+        _LOGGER.error("Authentication failed for Gira IoT API. Please check credentials.")
         return False
     except (GiraApiConnectionError, GiraApiRequestError) as e:
-        _LOGGER.error("Failed to connect or communicate with Gira IoT device: %s", e)
+        _LOGGER.error("Failed to connect or communicate with Gira One Server: %s", e)
         return False # Defer setup, HA will retry
 
     hass.data[DOMAIN][entry.entry_id][DATA_API_CLIENT] = api_client
@@ -119,7 +116,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Register callback views
     try:
-        # Get external URL for callbacks. Gira API requires HTTPS for callbacks. [cite: 43]
+        # Get external URL for callbacks. Gira IoT API requires HTTPS for callbacks.
         # This will be like https://<your_ha_domain_or_ip>:<port>
         base_url = get_url(hass, require_ssl=True, allow_internal=False, prefer_external=True)
     except NoURLAvailableError:
@@ -157,7 +154,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Listener for Home Assistant stop event to unregister client and callbacks
     async def async_on_hass_stop(event):
         """Run when Home Assistant is stopping."""
-        _LOGGER.info("Home Assistant is stopping. Cleaning up Gira IoT resources.")
+        _LOGGER.info("Home Assistant is stopping. Cleaning up Gira One resources.")
         client: GiraApiClient = hass.data[DOMAIN][entry.entry_id].get(DATA_API_CLIENT)
         if client:
             try:
@@ -183,7 +180,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    _LOGGER.info("Unloading Gira IoT entry: %s", entry.entry_id)
+    _LOGGER.info("Unloading Gira One entry: %s", entry.entry_id)
 
     # Unload platforms
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
@@ -210,7 +207,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
-        _LOGGER.info("Gira IoT entry %s unloaded successfully.", entry.entry_id)
+        _LOGGER.info("Gira One entry %s unloaded successfully.", entry.entry_id)
 
     return unload_ok
 
@@ -219,7 +216,7 @@ class BaseGiraCallbackView(HomeAssistantView):
     """Base View for Gira Callbacks."""
     requires_auth = False  # Gira API sends this without HA auth
     url = "OVERRIDE_IN_SUBCLASS" # e.g. SERVICE_CALLBACK_PATH
-    name = "OVERRIDE_IN_SUBCLASS_WITH_API_PREFIX" # e.g. "api:gira_iot:service_callback"
+    name = "OVERRIDE_IN_SUBCLASS_WITH_API_PREFIX" # e.g. "api:gira_one:service_callback"
     cors_allowed = True
 
     def __init__(self, hass: HomeAssistant, entry_id: str):
@@ -295,7 +292,7 @@ class GiraServiceCallbackView(BaseGiraCallbackView):
                 _LOGGER.info("Gira device reported 'projectConfigChanged'. UI config might not have changed.")
                 # As per docs, direct reaction not useful as server might be locked [cite: 66]
             elif event_type == EVENT_TYPE_UI_CONFIG_CHANGED: # [cite: 67]
-                _LOGGER.warning("Gira device reported 'xChanged'. Reloading configuration.")
+                _LOGGER.warning("Gira device reported 'uiConfigChanged'. Reloading configuration.")
                 # This is a significant event. We need to fetch the new UI config and
                 # potentially remove/re-add entities. This is complex.
                 # Simplest is to trigger a reload of the config entry.
@@ -320,8 +317,8 @@ class GiraValueCallbackView(BaseGiraCallbackView):
 
     @callback
     async def process_events(self, events: list, api_client: GiraApiClient):
-        """Process value update events. [cite: 67]"""
-        # events = [{"uid": "<unique identifier of data point>", "value": "<new data point value>"}] [cite: 67]
+        """Process value update events."""
+        # Example: events = [{"uid": "<unique identifier of data point>", "value": "<new data point value>"}]
         for event_data in events:
             uid = event_data.get("uid")
             value = event_data.get("value")
