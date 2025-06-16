@@ -1,0 +1,25 @@
+{
+  "config": {
+      "step": {
+          "user": {
+              "title": "Connect to Gira IoT Device",
+              "data": {
+                  "host": "Hostname or IP Address",
+                  "username": "Username",
+                  "password": "Password"
+              }
+          }
+      },
+      "error": {
+          "cannot_connect": "Failed to connect to the Gira device. Check host and network.",
+          "invalid_auth": "Invalid username or password.",
+          "registration_failed": "Failed to register client with the Gira device.",
+          "device_locked": "The Gira device is currently locked. Try again later.",
+          "api_error": "An unexpected API error occurred.",
+          "unknown": "An unknown error occurred."
+      },
+      "abort": {
+          "already_configured": "This Gira device is already configured."
+      }
+  }
+}

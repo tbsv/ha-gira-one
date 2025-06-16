@@ -1,0 +1,21 @@
+{
+    "domain": "gira_one",
+    "name": "Gira One",
+    "documentation": "URL_ZU_DEINER_DOKU_ODER_REPO",
+    "issue_tracker": "URL_ZU_DEINEM_ISSUE_TRACKER",
+    "config_flow": true,
+    "iot_class": "local_push",
+    "version": "0.1.0",
+    "codeowners": [
+      "@tbsv"
+    ],
+    "requirements": [
+      "aiohttp"
+    ],
+    "dependencies": [
+      "http"
+    ],
+    "loggers": [
+      "custom_components.gira_one"
+    ]
+  }
