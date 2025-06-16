@@ -130,7 +130,7 @@ class GiraClimate(ClimateEntity):
         self._heating_active_dp_value: Optional[bool] = None
         self._cooling_active_dp_value: Optional[bool] = None
         self._system_mode_is_cooling: Optional[bool] = (
-            None  # <<< NEU: Speichert, ob das System im Kühlmodus ist
+            None
         )
 
         self._update_supported_attributes()

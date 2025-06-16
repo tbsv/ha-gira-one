@@ -418,11 +418,6 @@ class GiraApiClient:
         # Don't raise on unload typically, just log
         return False
 
-    def set_credentials(self, client_id: str, token: str):
-        """Sets client_id and token, e.g. from existing config."""
-        self._client_id = client_id
-        self._token = token
-
     @property
     def token(self) -> Optional[str]:
         """Return the current access token."""

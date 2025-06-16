@@ -56,7 +56,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api_client = GiraApiClient(host, username, password, hass)
 
     if access_token and client_id:
-        api_client.set_credentials(client_id, access_token)
+        # If we have a token from config_flow, try to use it.
+        # The GiraApiClient needs a way to be initialized with an existing token.
+        api_client._token = access_token  # Direct access for now, consider setter
+        api_client._client_id = client_id
         _LOGGER.info("Using existing token and client_id from config entry.")
     else:
         _LOGGER.error(
