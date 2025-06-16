@@ -34,18 +34,16 @@ from .const import (
     DP_HVAC_MODE,
     DP_HVAC_HEATING_ACTIVE,
     DP_HVAC_COOLING_ACTIVE,
-    DP_HVAC_HEAT_COOL_SYSTEM_MODE, # <-- Dieser DP steuert den Betriebsmodus (Heizen/Kühlen)
     GIRA_KNX_HVAC_MODE_COMFORT,
     GIRA_KNX_HVAC_MODE_ECONOMY,
     GIRA_KNX_HVAC_MODE_STANDBY,
     GIRA_KNX_HVAC_MODE_PROTECTION,
-    GIRA_KNX_HVAC_MODE_AUTO,
 )
 from . import SIGNAL_DATA_UPDATE
 
 _LOGGER = logging.getLogger(__name__)
 
-# Mappings für Presets bleiben gleich
+# Mapping for Presets
 GIRA_MODE_TO_HA_PRESET_MAP = {
     GIRA_KNX_HVAC_MODE_COMFORT: PRESET_COMFORT,
     GIRA_KNX_HVAC_MODE_ECONOMY: PRESET_ECO,
@@ -193,23 +191,23 @@ class GiraClimate(ClimateEntity):
 
     def _determine_hvac_and_preset_states(self) -> None:
         """Determine final HVAC mode, action, and preset mode based on current DP values."""
-        # 1. HVAC Action bestimmen
+        # 1. Define HVAC Action
         if self._is_on_dp_value is False: self._attr_hvac_action = HVACAction.OFF
         elif self._heating_active_dp_value: self._attr_hvac_action = HVACAction.HEATING
         elif self._cooling_active_dp_value: self._attr_hvac_action = HVACAction.COOLING
         else: self._attr_hvac_action = HVACAction.IDLE
 
-        # 2. HVAC Mode bestimmen (<<< GEÄNDERTE LOGIK)
+        # 2. Define HVAC Mode
         if self._is_on_dp_value is False:
             self._attr_hvac_mode = HVACMode.OFF
-        elif self._system_mode_is_cooling is True: # System ist im Kühlmodus
+        elif self._system_mode_is_cooling is True: # System is in cooling mode
             self._attr_hvac_mode = HVACMode.COOL
-        elif self._system_mode_is_cooling is False: # System ist im Heizmodus
+        elif self._system_mode_is_cooling is False: # System is in heating mode
             self._attr_hvac_mode = HVACMode.HEAT
-        else: # Fallback, falls der Modus unbekannt, aber das Gerät an ist
+        else: # Fallback, if mode is unknown
             self._attr_hvac_mode = None
 
-        # 3. Preset Mode bestimmen
+        # 3. Define Preset Mode
         if self._attr_hvac_mode != HVACMode.OFF and self._current_gira_mode is not None:
             self._attr_preset_mode = GIRA_MODE_TO_HA_PRESET_MAP.get(self._current_gira_mode, PRESET_NONE)
         else:
@@ -243,9 +241,10 @@ class GiraClimate(ClimateEntity):
 
     async def async_turn_on(self) -> None:
         """Turn the climate device on."""
-        # Schaltet in den zuletzt bekannten oder Standard-Modus (z.B. Heizen)
+        # Note: Not working for Gira One heating devices!
         await self.async_set_hvac_mode(HVACMode.HEAT)
 
     async def async_turn_off(self) -> None:
         """Turn the climate device off."""
+        # Note: Not working for Gira One heating devices!
         await self.async_set_hvac_mode(HVACMode.OFF)
