@@ -10,9 +10,9 @@ CLIMATE = "climate"
 PLATFORMS = [LIGHT, COVER, CLIMATE]
 
 # Configuration and options
-CONF_HOST = "Host"
-CONF_USERNAME = "Username"
-CONF_PASSWORD = "Password"
+CONF_HOST = "host"
+CONF_USERNAME = "username"
+CONF_PASSWORD = "password"
 
 # API constants
 API_VERSION = "v2" # As specified in the PDF
