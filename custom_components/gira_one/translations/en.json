@@ -4,7 +4,7 @@
           "user": {
               "title": "Connect to Gira One Server",
               "data": {
-                  "host": "Hostname or IP Address",
+                  "host": "Server IP Address",
                   "username": "Username",
                   "password": "Password"
               }

@@ -1,4 +1,6 @@
 """Constants for the Gira One integration."""
+
+# Domain
 DOMAIN = "gira_one"
 
 # Platforms
