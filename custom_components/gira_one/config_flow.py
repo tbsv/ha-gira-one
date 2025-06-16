@@ -1,4 +1,5 @@
 """Config flow for the Gira One integration."""
+
 import logging
 
 import voluptuous as vol
@@ -21,7 +22,7 @@ class GiraIoTConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Gira One."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH # Callbacks make it push
+    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH  # Callbacks make it push
 
     async def async_step_user(self, user_input: dict | None = None):
         """Handle the initial step."""
@@ -37,38 +38,45 @@ class GiraIoTConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             instance_id = "test"
             client_id = f"{CLIENT_URN_PREFIX}:{instance_id}"
 
-
             try:
                 api_client = GiraApiClient(host, username, password, self.hass)
-                await api_client.check_api_availability() # Check before trying to register
-                token = await api_client.register_client(client_id) # [cite: 44]
+                await (
+                    api_client.check_api_availability()
+                )  # Check before trying to register
+                token = await api_client.register_client(client_id)  # [cite: 44]
 
                 if token:
-                    await self.async_set_unique_id(host) # Assuming host is unique identifier for the device
+                    await self.async_set_unique_id(
+                        host
+                    )  # Assuming host is unique identifier for the device
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(
-                        title=host, # Or use deviceName from availability check
+                        title=host,  # Or use deviceName from availability check
                         data={
                             CONF_HOST: host,
                             CONF_USERNAME: username,
-                            CONF_PASSWORD: password, # Storing password, consider alternatives if sensitive
-                            "client_id": client_id, # Store generated client_id
-                            "access_token": token # Store initial token
+                            CONF_PASSWORD: password,  # Storing password, consider alternatives if sensitive
+                            "client_id": client_id,  # Store generated client_id
+                            "access_token": token,  # Store initial token
                         },
                     )
                 else:
-                    errors["base"] = "registration_failed" # Should be caught by exceptions below
+                    errors["base"] = (
+                        "registration_failed"  # Should be caught by exceptions below
+                    )
 
-            except GiraApiAuthError: # [cite: 45]
+            except GiraApiAuthError:  # [cite: 45]
                 _LOGGER.error("Authentication failed during setup")
                 errors["base"] = "invalid_auth"
             except GiraApiConnectionError:
                 _LOGGER.error("Connection error during setup")
                 errors["base"] = "cannot_connect"
-            except GiraApiRequestError as e: # Includes 423 Locked [cite: 45]
+            except GiraApiRequestError as e:  # Includes 423 Locked [cite: 45]
                 _LOGGER.error("API request error during setup: %s", e)
-                if "locked" in str(e).lower(): # Based on error code "locked" [cite: 25, 45]
+                if (
+                    "locked" in str(e).lower()
+                ):  # Based on error code "locked" [cite: 25, 45]
                     errors["base"] = "device_locked"
                 else:
                     errors["base"] = "api_error"
@@ -94,6 +102,7 @@ class GiraIoTConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     # def async_get_options_flow(config_entry):
     #     """Get the options flow for this handler."""
     #     return GiraOptionsFlowHandler(config_entry)
+
 
 # class GiraOptionsFlowHandler(config_entries.OptionsFlow):
 # ...
