@@ -1,4 +1,5 @@
 """Gira One integration."""
+
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -49,66 +50,93 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     host = entry.data[CONF_HOST]
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
-    client_id = entry.data.get("client_id") # From config flow
-    access_token = entry.data.get("access_token") # Initial token from config flow
-
+    client_id = entry.data.get("client_id")  # From config flow
+    access_token = entry.data.get("access_token")  # Initial token from config flow
 
     api_client = GiraApiClient(host, username, password, hass)
 
     if access_token and client_id:
-        # If we have a token from config_flow, try to use it.
-        # The GiraApiClient needs a way to be initialized with an existing token.
-        api_client._token = access_token # Direct access for now, consider setter
-        api_client._client_id = client_id
+        api_client.set_credentials(client_id, access_token)
         _LOGGER.info("Using existing token and client_id from config entry.")
     else:
-        _LOGGER.error("Client ID or access token missing from config entry. This should not happen.")
+        _LOGGER.error(
+            "Client ID or access token missing from config entry. This should not happen."
+        )
         return False
-
 
     try:
         # Verify token is still valid by fetching UI config, or re-register if needed
         try:
             _LOGGER.debug("Attempting to fetch UI config with stored token.")
             ui_config = await api_client.get_ui_config()
-        except GiraApiAuthError: # Token might be invalid
-            _LOGGER.warning("Initial token seems invalid or expired, attempting to re-register client.")
-            new_token = await api_client.register_client(client_id) # Re-register
+        except GiraApiAuthError:  # Token might be invalid
+            _LOGGER.warning(
+                "Initial token seems invalid or expired, attempting to re-register client."
+            )
+            new_token = await api_client.register_client(client_id)  # Re-register
             if new_token:
                 # Persist the new token
                 new_data = {**entry.data, "access_token": new_token}
                 hass.config_entries.async_update_entry(entry, data=new_data)
                 _LOGGER.info("Client re-registered successfully, new token stored.")
-                ui_config = await api_client.get_ui_config() # Retry with new token
+                ui_config = await api_client.get_ui_config()  # Retry with new token
             else:
-                raise GiraApiAuthError("Failed to re-register client and obtain a new token.")
+                raise GiraApiAuthError(
+                    "Failed to re-register client and obtain a new token."
+                )
 
         _LOGGER.info("Successfully connected to Gira IoT API and fetched UI config.")
 
     except GiraApiAuthError:
-        _LOGGER.error("Authentication failed for Gira IoT API. Please check credentials.")
+        _LOGGER.error(
+            "Authentication failed for Gira IoT API. Please check credentials."
+        )
         return False
     except (GiraApiConnectionError, GiraApiRequestError) as e:
         _LOGGER.error("Failed to connect or communicate with Gira One Server: %s", e)
-        return False # Defer setup, HA will retry
+        return False  # Defer setup, HA will retry
 
     hass.data[DOMAIN][entry.entry_id][DATA_API_CLIENT] = api_client
     hass.data[DOMAIN][entry.entry_id][DATA_UI_CONFIG] = ui_config
     hass.data[DOMAIN][entry.entry_id][DATA_LISTENERS] = []
 
+    # Fetch detailed server information for device registry
+    server_details = {}
+    try:
+        _LOGGER.debug("Attempting to fetch server details.")
+        server_details = await api_client.get_server_details()
+    except (GiraApiConnectionError, GiraApiRequestError) as e:
+        _LOGGER.warning(
+            "Could not fetch detailed server info from Gira One Server."
+            "Using information from UI config or defaults for device registration.",
+            e,
+        )
+    except GiraApiAuthError as e:
+        _LOGGER.warning(
+            "Authentication error while fetching detailed server info. Using fallbacks.", e
+        )
+    except Exception as e:  # Catch any other unexpected error
+        _LOGGER.error(
+            "Unexpected error fetching detailed server info. Using fallbacks.", e
+        )
+
     # Register device
-    device_name = ui_config.get("deviceName", host) # From API availability check, fallback to host
-    device_type = ui_config.get("deviceType", "Unknown Gira Device")
-    device_version = ui_config.get("deviceVersion", "Unknown")
+    device_name = server_details.get("deviceName") or ui_config.get("deviceName") or host
+    model_name = server_details.get("deviceType") or "Unknown Gira Device"
+    sw_version = server_details.get("deviceVersion") or ui_config.get("deviceVersion") or "Unknown"
+    hw_version = server_details.get("info")
 
     device_registry = dr.async_get(hass)
     device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, entry.unique_id or host)}, # entry.unique_id is host from config_flow
+        identifiers={
+            (DOMAIN, entry.unique_id or host)
+        },
         name=device_name,
         manufacturer="Gira",
-        model=device_type,
-        sw_version=device_version,
+        model=model_name,
+        sw_version=sw_version,
+        hw_version=hw_version,
     )
 
     # Setup platforms
@@ -118,7 +146,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         # Get external URL for callbacks. Gira IoT API requires HTTPS for callbacks.
         # This will be like https://<your_ha_domain_or_ip>:<port>
-        base_url = get_url(hass, require_ssl=True, allow_internal=False, prefer_external=True)
+        base_url = get_url(
+            hass, require_ssl=True, allow_internal=False, prefer_external=True
+        )
     except NoURLAvailableError:
         _LOGGER.error(
             "Cannot determine external SSL URL for Gira callbacks. "
@@ -128,7 +158,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # but callbacks will fail to register.
         # However, the prompt *requires* callbacks.
         return False
-
 
     service_callback_url = f"{base_url}{SERVICE_CALLBACK_PATH}"
     value_callback_url = f"{base_url}{VALUE_CALLBACK_PATH}"
@@ -143,13 +172,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await api_client.register_callbacks(service_callback_url, value_callback_url)
         _LOGGER.info("Gira callbacks registered successfully with the device.")
     except GiraApiRequestError as e:
-        _LOGGER.error("Failed to register Gira callbacks with the device: %s. Real-time updates will not work.", e)
+        _LOGGER.error(
+            "Failed to register Gira callbacks with the device: %s. Real-time updates will not work.",
+            e,
+        )
         # Depending on strictness, you might want to return False here
         # For now, let's allow it to load but with a clear error.
     except Exception as e:
         _LOGGER.error("Unexpected error registering Gira callbacks: %s", e)
         return False
-
 
     # Listener for Home Assistant stop event to unregister client and callbacks
     async def async_on_hass_stop(event):
@@ -173,7 +204,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id][DATA_LISTENERS].append(
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_on_hass_stop)
     )
-
 
     return True
 
@@ -204,7 +234,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except Exception as e:
             _LOGGER.error("Error unregistering Gira client during unload: %s", e)
 
-
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
         _LOGGER.info("Gira One entry %s unloaded successfully.", entry.entry_id)
@@ -214,14 +243,17 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 class BaseGiraCallbackView(HomeAssistantView):
     """Base View for Gira Callbacks."""
+
     requires_auth = False  # Gira API sends this without HA auth
-    url = "OVERRIDE_IN_SUBCLASS" # e.g. SERVICE_CALLBACK_PATH
-    name = "OVERRIDE_IN_SUBCLASS_WITH_API_PREFIX" # e.g. "api:gira_one:service_callback"
+    url = "OVERRIDE_IN_SUBCLASS"  # e.g. SERVICE_CALLBACK_PATH
+    name = (
+        "OVERRIDE_IN_SUBCLASS_WITH_API_PREFIX"  # e.g. "api:gira_one:service_callback"
+    )
     cors_allowed = True
 
     def __init__(self, hass: HomeAssistant, entry_id: str):
         self.hass = hass
-        self.entry_id = entry_id # To know which config entry this callback belongs to
+        self.entry_id = entry_id  # To know which config entry this callback belongs to
 
     async def post(self, request):
         """Handle POST requests from Gira API."""
@@ -236,22 +268,30 @@ class BaseGiraCallbackView(HomeAssistantView):
         # Verify token if present in callback data
         # This is important to ensure the callback is for our registered client
         expected_token = None
-        api_client: GiraApiClient = self.hass.data.get(DOMAIN, {}).get(self.entry_id, {}).get(DATA_API_CLIENT)
+        api_client: GiraApiClient = (
+            self.hass.data.get(DOMAIN, {}).get(self.entry_id, {}).get(DATA_API_CLIENT)
+        )
 
         if api_client:
             expected_token = api_client.token
 
         if not expected_token:
-            _LOGGER.warning("No API client or token found for entry %s to verify callback.", self.entry_id)
+            _LOGGER.warning(
+                "No API client or token found for entry %s to verify callback.",
+                self.entry_id,
+            )
             # According to API documentation, if client responds with 404, API implicitly unregisters client
             # This seems like a good place if we can't find our client.
-            return self.json_message("Client not configured or token missing", status_code=404)
+            return self.json_message(
+                "Client not configured or token missing", status_code=404
+            )
 
         callback_token = data.get("token")
         if callback_token != expected_token:
             _LOGGER.error(
                 "Mismatched token in Gira callback. Expected '%s', got '%s'. Ignoring.",
-                expected_token, callback_token
+                expected_token,
+                callback_token,
             )
             # If token is mismatched, it's a security concern.
             # API documentation specifies 404 for client de-registration
@@ -260,7 +300,7 @@ class BaseGiraCallbackView(HomeAssistantView):
         # Process the events
         await self.process_events(data.get("events", []), api_client)
 
-        return self.json({}, status_code=200) # Always return 200 OK if processed
+        return self.json({}, status_code=200)  # Always return 200 OK if processed
 
     @callback
     async def process_events(self, events: list, api_client: GiraApiClient):
@@ -270,6 +310,7 @@ class BaseGiraCallbackView(HomeAssistantView):
 
 class GiraServiceCallbackView(BaseGiraCallbackView):
     """View to handle Gira Service Callbacks."""
+
     url = SERVICE_CALLBACK_PATH
     name = f"api:{DOMAIN}:service_callback"
 
@@ -289,29 +330,43 @@ class GiraServiceCallbackView(BaseGiraCallbackView):
                 _LOGGER.info("Gira device reported 'restart'.")
                 # Might need to re-register callbacks after restart, or API client.
             elif event_type == EVENT_TYPE_PROJECT_CONFIG_CHANGED:
-                _LOGGER.info("Gira device reported 'projectConfigChanged'. UI config might not have changed.")
+                _LOGGER.info(
+                    "Gira device reported 'projectConfigChanged'. UI config might not have changed."
+                )
                 # As per API documentation, direct reaction not useful as server might be locked]
             elif event_type == EVENT_TYPE_UI_CONFIG_CHANGED:
-                _LOGGER.warning("Gira device reported 'uiConfigChanged'. Reloading configuration.")
+                _LOGGER.warning(
+                    "Gira device reported 'uiConfigChanged'. Reloading configuration."
+                )
                 # This is a significant event. We need to fetch the new UI config and
                 # potentially remove/re-add entities. This is complex.
                 # Simplest is to trigger a reload of the config entry.
                 try:
                     new_ui_config = await api_client.get_ui_config()
-                    self.hass.data[DOMAIN][self.entry_id][DATA_UI_CONFIG] = new_ui_config
+                    self.hass.data[DOMAIN][self.entry_id][DATA_UI_CONFIG] = (
+                        new_ui_config
+                    )
                     # Signal that entities need to check for changes or be reloaded
-                    async_dispatcher_send(self.hass, f"{SIGNAL_UI_CONFIG_CHANGED}_{self.entry_id}")
-                    _LOGGER.info("Successfully re-fetched UI config after 'uiConfigChanged' event.")
+                    async_dispatcher_send(
+                        self.hass, f"{SIGNAL_UI_CONFIG_CHANGED}_{self.entry_id}"
+                    )
+                    _LOGGER.info(
+                        "Successfully re-fetched UI config after 'uiConfigChanged' event."
+                    )
                     # A full reload might be safer:
                     # await self.hass.config_entries.async_reload(self.entry_id)
                 except Exception as e:
-                    _LOGGER.error("Failed to re-fetch UI config after 'uiConfigChanged' event: %s", e)
+                    _LOGGER.error(
+                        "Failed to re-fetch UI config after 'uiConfigChanged' event: %s",
+                        e,
+                    )
             else:
                 _LOGGER.warning("Unknown Gira service event type: %s", event_type)
 
 
 class GiraValueCallbackView(BaseGiraCallbackView):
     """View to handle Gira Value Callbacks."""
+
     url = VALUE_CALLBACK_PATH
     name = f"api:{DOMAIN}:value_callback"
 
@@ -326,4 +381,6 @@ class GiraValueCallbackView(BaseGiraCallbackView):
             if uid is not None:
                 # Dispatch the update. Entities will listen for this.
                 # The signal includes the entry_id to ensure only relevant entities update.
-                async_dispatcher_send(self.hass, f"{SIGNAL_DATA_UPDATE}_{self.entry_id}", uid, value)
+                async_dispatcher_send(
+                    self.hass, f"{SIGNAL_DATA_UPDATE}_{self.entry_id}", uid, value
+                )
