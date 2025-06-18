@@ -22,15 +22,18 @@
       "already_configured": "This Gira One Server is already configured."
     }
   },
-  "state": {
+  "entity": {
     "climate": {
-      "gira_one__": {
-        "preset_mode": {
-          "protection": "Frost-/Hitzeschutz",
-          "comfort": "Komfort",
-          "eco": "Nacht",
-          "away": "Standby",
-          "none": "Automatik"
+      "_": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "protection": "Frost-/Hitzeschutz",
+              "comfort": "Komfort",
+              "eco": "Nacht",
+              "away": "Standby"
+            }
+          }
         }
       }
     }
