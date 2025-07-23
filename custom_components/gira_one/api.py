@@ -11,7 +11,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import API_VERSION, DEFAULT_SKIP_CERT_VERIFY
+from .const import API_VERSION
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,13 +41,12 @@ class GiraApiClient:
         username: Optional[str],
         password: Optional[str],
         hass: HomeAssistant,
-        skip_cert_verify: bool = DEFAULT_SKIP_CERT_VERIFY,
     ) -> None:
         """Initialize the API client."""
         self._host = host
         self._username = username
         self._password = password
-        self._session = async_get_clientsession(hass, verify_ssl=not skip_cert_verify)
+        self._session = async_get_clientsession(hass, verify_ssl=False) # Gira IoT API uses self-signed certs
         self._base_url = f"https://{self._host}/api"
         self._token: Optional[str] = None
         self._client_id: Optional[str] = None  # Will be set during registration
@@ -103,7 +102,6 @@ class GiraApiClient:
                     params=params,
                     json=json_data,
                     auth=auth,
-                    # ssl=False if self._skip_cert_verify else None # handled by session
                 )
         except aiohttp.ClientConnectorCertificateError as err:
             _LOGGER.error(

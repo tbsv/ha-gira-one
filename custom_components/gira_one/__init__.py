@@ -26,6 +26,8 @@ from .const import (
     DATA_UI_CONFIG,
     DATA_LISTENERS,
     DATA_ACCESS_TOKEN,
+    EVENT_TYPE_TEST,
+    EVENT_TYPE_PROJECT_CONFIG_CHANGED,
     EVENT_TYPE_UI_CONFIG_CHANGED,
     EVENT_TYPE_RESTART,
     EVENT_TYPE_STARTUP,
@@ -326,7 +328,7 @@ class GiraServiceCallbackView(BaseGiraCallbackView):
             _LOGGER.info("Processing Gira service event: %s", event_type)
 
             if event_type == EVENT_TYPE_TEST:
-                _LOGGER.info("Received 'test' service event from Gira API.")
+                _LOGGER.info("Received 'test' service event from Gira device.")
             elif event_type == EVENT_TYPE_STARTUP:
                 _LOGGER.info("Gira device reported 'startup'.")
                 # Potentially re-verify connection or fetch fresh status

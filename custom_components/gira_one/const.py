@@ -17,7 +17,6 @@ CONF_PASSWORD = "password"
 # API constants
 API_VERSION = "v2"  # As specified in the PDF
 CLIENT_URN_PREFIX = "urn:homeassistant:gira_one"  # To create a unique client ID
-DEFAULT_SKIP_CERT_VERIFY = True  # Gira IoT API uses self-signed certs
 
 # Data stored in hass.data
 DATA_API_CLIENT = "api_client"
@@ -70,6 +69,9 @@ DP_HVAC_HEATING_ACTIVE = "Heating"  # Binary, is heating subsystem active?
 DP_HVAC_COOLING_ACTIVE = "Cooling"  # Binary, is cooling subsystem active?
 DP_HVAC_HEAT_COOL_SYSTEM_MODE = "Heat-Cool"  # Binary, to switch main system between heat/cool operation (e.g., 2-pipe)
 # DP_HVAC_ON_OFF = "OnOff"                  # Master On/Off for climate device
+
+# Custom preset name for protection mode
+PRESET_PROTECTION = "protection"
 
 # Gira KNX HVAC Mode constants
 # These are potential values the 'Mode' data point (DP_HVAC_MODE) might take.
