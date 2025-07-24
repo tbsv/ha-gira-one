@@ -37,7 +37,7 @@ from .const import (
     GIRA_KNX_HVAC_MODE_STANDBY,
     PRESET_PROTECTION,
 )
-from .entity import GiraOneEntity  # Import the new base class
+from .entity import GiraOneEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +76,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     _attr_translation_key = "gira_one_climate_device"
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _enable_turn_on_off_backwards_compatibility = False
+    _attr_assumed_state = True
 
     def __init__(
         self,
@@ -94,16 +95,18 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         self._attr_preset_mode: Optional[str] = None
         self._attr_preset_modes: List[str] = []
 
-        # Internal states
+        # Internal states for logic
         self._is_on_dp_value: Optional[bool] = None
         self._current_gira_mode: Optional[int] = None
         self._heating_active_dp_value: Optional[bool] = None
         self._cooling_active_dp_value: Optional[bool] = None
+        # Store active HVAC mode
+        self._last_active_hvac_mode: Optional[HVACMode] = None
 
         self._update_supported_attributes()
 
     def _update_supported_attributes(self) -> None:
-        """Determine supported features, hvac modes, and preset modes."""
+        """Determine supported features and preset modes."""
         features = ClimateEntityFeature(0)
         hvac_modes: List[HVACMode] = []
 
@@ -114,11 +117,17 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
             features |= ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
             hvac_modes.append(HVACMode.OFF)
 
+        if self._has_dp(DP_HVAC_HEATING_ACTIVE):
+            hvac_modes.append(HVACMode.HEAT)
+        if self._has_dp(DP_HVAC_COOLING_ACTIVE):
+            hvac_modes.append(HVACMode.COOL)
+
+        self._attr_hvac_modes = sorted(list(set(hvac_modes)))
+
         if self._can_write_dp(DP_HVAC_MODE):
             features |= ClimateEntityFeature.PRESET_MODE
             self._attr_preset_modes = sorted(list(set(GIRA_MODE_TO_HA_PRESET_MAP.values())))
 
-        self._attr_hvac_modes = sorted(list(set(hvac_modes)))
         self._attr_supported_features = features
 
     async def _fetch_initial_state(self) -> None:
@@ -130,7 +139,6 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                     self._update_state_from_dp_value(
                         dp_value_info["uid"], dp_value_info["value"]
                     )
-                self._determine_hvac_and_preset_states()
         except Exception as e:
             _LOGGER.error("Error fetching initial state for climate %s: %s", self.name, e)
 
@@ -154,11 +162,13 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                         self._cooling_active_dp_value = bool(int(value))
                     changed = True
                 except (ValueError, TypeError):
-                    return False
-                # After updating internal values, redetermine the overall state
-                self._determine_hvac_and_preset_states()
-                return changed
-        return False
+                    _LOGGER.warning("Could not parse value '%s' for climate DP %s", value, dp_name)
+                break
+
+        if changed:
+            self._determine_hvac_and_preset_states()
+
+        return changed
 
     def _determine_hvac_and_preset_states(self) -> None:
         """Determine final HVAC mode, action, and preset mode."""
@@ -172,17 +182,24 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         else:
             self._attr_hvac_action = HVACAction.IDLE
 
-        # 2. HVAC Mode
+        # Identify last known active HVAC mode
+        if self._attr_hvac_action == HVACAction.HEATING:
+            self._last_active_hvac_mode = HVACMode.HEAT
+        elif self._attr_hvac_action == HVACAction.COOLING:
+            self._last_active_hvac_mode = HVACMode.COOL
+
+        # Restore last known active HVAC mode
         if self._is_on_dp_value is False:
             self._attr_hvac_mode = HVACMode.OFF
-        elif self._has_dp(DP_HVAC_COOLING_ACTIVE): # Simple assumption: if cooling DP exists, it can be a mode
-            self._attr_hvac_mode = HVACMode.COOL
-        elif self._has_dp(DP_HVAC_HEATING_ACTIVE):
-            self._attr_hvac_mode = HVACMode.HEAT
         else:
-            self._attr_hvac_mode = None
+            if self._last_active_hvac_mode:
+                self._attr_hvac_mode = self._last_active_hvac_mode
+            elif HVACMode.HEAT in self.hvac_modes:
+                self._attr_hvac_mode = HVACMode.HEAT
+            elif HVACMode.COOL in self.hvac_modes:
+                self._attr_hvac_mode = HVACMode.COOL
 
-        # 3. Preset Mode
+        # 4. Preset Mode
         if self._attr_hvac_mode != HVACMode.OFF and self._current_gira_mode is not None:
             self._attr_preset_mode = GIRA_MODE_TO_HA_PRESET_MAP.get(self._current_gira_mode)
         else:
@@ -192,18 +209,35 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         """Set new target temperature."""
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is not None:
             await self._send_command(DP_TARGET_TEMP, temperature)
+            self._attr_target_temperature = temperature
+            self.async_write_ha_state()
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
         if (gira_mode_val := HA_PRESET_TO_GIRA_MODE_MAP.get(preset_mode)) is not None:
             await self._send_command(DP_HVAC_MODE, gira_mode_val)
+            self._attr_preset_mode = preset_mode
+            self.async_write_ha_state()
+
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
+        """Set new target hvac mode."""
+        if hvac_mode == HVACMode.OFF:
+            await self.async_turn_off()
+        elif hvac_mode in self.hvac_modes:
+            await self.async_turn_on()
 
     async def async_turn_on(self) -> None:
         """Turn the climate device on."""
         if self._can_write_dp(DP_HVAC_ON_OFF):
             await self._send_command(DP_HVAC_ON_OFF, 1)
+            self._is_on_dp_value = True
+            self._determine_hvac_and_preset_states()
+            self.async_write_ha_state()
 
     async def async_turn_off(self) -> None:
         """Turn the climate device off."""
         if self._can_write_dp(DP_HVAC_ON_OFF):
             await self._send_command(DP_HVAC_ON_OFF, 0)
+            self._is_on_dp_value = False
+            self._determine_hvac_and_preset_states()
+            self.async_write_ha_state()
