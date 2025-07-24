@@ -10,7 +10,8 @@
       "@tbsv"
     ],
     "requirements": [
-      "aiohttp"
+      "aiohttp",
+      "async_timeout"
     ],
     "dependencies": [
       "http"
