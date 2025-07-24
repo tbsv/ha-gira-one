@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from homeassistant.components.cover import (
     ATTR_POSITION,
     ATTR_TILT_POSITION,
+    CoverDeviceClass,
     CoverEntity,
     CoverEntityFeature,
 )
@@ -25,7 +26,7 @@ from .const import (
     DP_UP_DOWN,
     GIRA_FUNCTION_TYPE_TO_HA_PLATFORM,
 )
-from .entity import GiraOneEntity  # Import the new base class
+from .entity import GiraOneEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,6 +59,9 @@ async def async_setup_entry(
 class GiraCover(GiraOneEntity, CoverEntity):
     """Representation of a Gira Cover."""
 
+    # Activate optimistic mode
+    _attr_assumed_state = True
+
     def __init__(
         self,
         config_entry: ConfigEntry,
@@ -65,36 +69,45 @@ class GiraCover(GiraOneEntity, CoverEntity):
         function_data: Dict[str, Any],
     ) -> None:
         """Initialize the Gira Cover."""
-        # Call the parent's __init__ to handle all the boilerplate
         super().__init__(config_entry, api_client, function_data)
 
-        # Cover-specific attributes
         self._attr_current_cover_position: Optional[int] = None
         self._attr_current_cover_tilt_position: Optional[int] = None
         self._attr_is_moving: bool = False
         self._attr_is_opening: bool = False
         self._attr_is_closing: bool = False
-        self._attr_is_closed: Optional[bool] = None
-        self._last_known_direction_is_opening: Optional[bool] = None
+
+        if self._can_write_dp(DP_SLAT_POSITION):
+            self._attr_device_class = CoverDeviceClass.BLIND
+        else:
+            self._attr_device_class = CoverDeviceClass.SHUTTER
 
         self._update_supported_features()
 
+    @property
+    def is_closed(self) -> Optional[bool]:
+        """Return if the cover is closed or not."""
+        if self.current_cover_position is None:
+            return None
+        return self.current_cover_position == 100
+
     def _update_supported_features(self) -> None:
-        """Determine supported features based on available data points."""
+        """Determine supported features based on all available data points."""
         features = CoverEntityFeature(0)
-        if self._has_dp(DP_UP_DOWN):
-            features |= (
-                CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
-            )
+        if self._can_write_dp(DP_POSITION) or self._has_dp(DP_UP_DOWN):
+            features |= CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
         if self._can_write_dp(DP_POSITION):
             features |= CoverEntityFeature.SET_POSITION
+        if self._has_dp(DP_STEP_UP_DOWN):
+            features |= CoverEntityFeature.STOP
         if self._can_write_dp(DP_SLAT_POSITION):
             features |= (
                 CoverEntityFeature.OPEN_TILT
                 | CoverEntityFeature.CLOSE_TILT
                 | CoverEntityFeature.SET_TILT_POSITION
-                | CoverEntityFeature.STOP_TILT
             )
+            if features & CoverEntityFeature.STOP:
+                features |= CoverEntityFeature.STOP_TILT
         self._attr_supported_features = features
 
     async def _fetch_initial_state(self) -> None:
@@ -116,17 +129,14 @@ class GiraCover(GiraOneEntity, CoverEntity):
             if dp_info["uid"] == dp_uid_updated:
                 try:
                     if dp_name == DP_POSITION:
-                        gira_position = int(float(value))
-                        ha_position = 100 - gira_position  # Invert logic
-                        if self._attr_current_cover_position != ha_position:
-                            self._attr_current_cover_position = ha_position
-                            self._attr_is_closed = self._attr_current_cover_position == 100
+                        position = int(float(value))
+                        if self._attr_current_cover_position != position:
+                            self._attr_current_cover_position = position
                             changed = True
                     elif dp_name == DP_SLAT_POSITION:
-                        gira_tilt = int(float(value))
-                        ha_tilt = 100 - gira_tilt  # Invert logic
-                        if self._attr_current_cover_tilt_position != ha_tilt:
-                            self._attr_current_cover_tilt_position = ha_tilt
+                        tilt_position = int(float(value))
+                        if self._attr_current_cover_tilt_position != tilt_position:
+                            self._attr_current_cover_tilt_position = tilt_position
                             changed = True
                     elif dp_name == DP_MOVEMENT:
                         is_moving_now = bool(int(value))
@@ -137,30 +147,57 @@ class GiraCover(GiraOneEntity, CoverEntity):
                                 self._attr_is_opening = False
                                 self._attr_is_closing = False
                 except (ValueError, TypeError):
-                    return False
-                return changed
-        return False
+                    _LOGGER.warning(
+                        "Could not parse value '%s' for cover DP %s", value, dp_name
+                    )
+                break
+        return changed
 
     async def async_open_cover(self, **kwargs: Any) -> None:
-        """Open the cover."""
-        await self.async_set_cover_position(position=0)
+        """Open the cover by sending an 'Up' command."""
+        if self._has_dp(DP_UP_DOWN):
+            await self._send_command(DP_UP_DOWN, 0)
+        else:
+            await self.async_set_cover_position(position=0)
+
+        # Optimistic update
+        self._attr_is_moving = True
+        self._attr_is_opening = True
+        self._attr_is_closing = False
+        self.async_write_ha_state()
 
     async def async_close_cover(self, **kwargs: Any) -> None:
-        """Close the cover."""
-        await self.async_set_cover_position(position=100)
+        """Close the cover by sending a 'Down' command."""
+        if self._has_dp(DP_UP_DOWN):
+            await self._send_command(DP_UP_DOWN, 1)
+        else:
+            await self.async_set_cover_position(position=100)
+
+        # Optimistic update
+        self._attr_is_moving = True
+        self._attr_is_opening = False
+        self._attr_is_closing = True
+        self.async_write_ha_state()
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
         if self._has_dp(DP_STEP_UP_DOWN):
-            await self._send_command(DP_STEP_UP_DOWN, 1) # Send a step command to stop
-        else:
-            _LOGGER.warning("Cover %s: No DP_STEP_UP_DOWN found for stopping.", self.name)
+            await self._send_command(DP_STEP_UP_DOWN, 1)
+
+        # KORREKTUR 4: Optimistisches Update
+        self._attr_is_moving = False
+        self._attr_is_opening = False
+        self._attr_is_closing = False
+        self.async_write_ha_state()
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Set the cover position."""
-        ha_position = kwargs[ATTR_POSITION]
-        gira_position = 100 - ha_position  # Invert logic for sending
-        await self._send_command(DP_POSITION, gira_position)
+        position = kwargs[ATTR_POSITION]
+        await self._send_command(DP_POSITION, position)
+
+        # Optimistic update
+        self._attr_current_cover_position = position
+        self.async_write_ha_state()
 
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt."""
@@ -174,11 +211,15 @@ class GiraCover(GiraOneEntity, CoverEntity):
         """Stop the cover tilt."""
         if self._has_dp(DP_STEP_UP_DOWN):
             await self._send_command(DP_STEP_UP_DOWN, 1)
-        else:
-            _LOGGER.warning("Cover %s: No DP_STEP_UP_DOWN found for stopping tilt.", self.name)
+
+        self._attr_is_moving = False
+        self.async_write_ha_state()
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Set the cover tilt position."""
-        ha_tilt_position = kwargs[ATTR_TILT_POSITION]
-        gira_tilt_position = 100 - ha_tilt_position  # Invert logic for sending
-        await self._send_command(DP_SLAT_POSITION, gira_tilt_position)
+        tilt_position = kwargs[ATTR_TILT_POSITION]
+        await self._send_command(DP_SLAT_POSITION, tilt_position)
+
+        # Optimistic update
+        self._attr_current_cover_tilt_position = tilt_position
+        self.async_write_ha_state()
