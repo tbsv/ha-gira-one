@@ -11,7 +11,7 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api import GiraApiClient
@@ -148,13 +148,17 @@ class GiraCover(GiraOneEntity, CoverEntity):
                                 self._attr_is_closing = False
                 except (ValueError, TypeError):
                     _LOGGER.warning(
-                        "Could not parse value '%s' for cover DP %s", value, dp_name
+                        "Could not parse value '%s' for cover DP %s on entity %s",
+                        value,
+                        dp_name,
+                        self.name,
                     )
                 break
         return changed
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover by sending an 'Up' command."""
+        _LOGGER.debug("Opening cover %s", self.name)
         if self._has_dp(DP_UP_DOWN):
             await self._send_command(DP_UP_DOWN, 0)
         else:
@@ -168,6 +172,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover by sending a 'Down' command."""
+        _LOGGER.debug("Closing cover %s", self.name)
         if self._has_dp(DP_UP_DOWN):
             await self._send_command(DP_UP_DOWN, 1)
         else:
@@ -182,9 +187,10 @@ class GiraCover(GiraOneEntity, CoverEntity):
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
         if self._has_dp(DP_STEP_UP_DOWN):
+            _LOGGER.debug("Stopping cover %s", self.name)
             await self._send_command(DP_STEP_UP_DOWN, 1)
 
-        # KORREKTUR 4: Optimistisches Update
+        # Optimistic update
         self._attr_is_moving = False
         self._attr_is_opening = False
         self._attr_is_closing = False
@@ -193,10 +199,12 @@ class GiraCover(GiraOneEntity, CoverEntity):
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Set the cover position."""
         position = kwargs[ATTR_POSITION]
+        _LOGGER.debug("Setting cover %s to position %s", self.name, position)
         await self._send_command(DP_POSITION, position)
 
         # Optimistic update
         self._attr_current_cover_position = position
+        self._attr_is_moving = True
         self.async_write_ha_state()
 
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
@@ -210,16 +218,22 @@ class GiraCover(GiraOneEntity, CoverEntity):
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
         if self._has_dp(DP_STEP_UP_DOWN):
+            _LOGGER.debug("Stopping cover tilt on %s", self.name)
             await self._send_command(DP_STEP_UP_DOWN, 1)
 
+        # Optimistic update
         self._attr_is_moving = False
         self.async_write_ha_state()
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Set the cover tilt position."""
         tilt_position = kwargs[ATTR_TILT_POSITION]
+        _LOGGER.debug(
+            "Setting cover tilt %s to position %s", self.name, tilt_position
+        )
         await self._send_command(DP_SLAT_POSITION, tilt_position)
 
         # Optimistic update
         self._attr_current_cover_tilt_position = tilt_position
+        self._attr_is_moving = True
         self.async_write_ha_state()
