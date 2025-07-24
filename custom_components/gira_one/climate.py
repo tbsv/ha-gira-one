@@ -100,7 +100,6 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         self._current_gira_mode: Optional[int] = None
         self._heating_active_dp_value: Optional[bool] = None
         self._cooling_active_dp_value: Optional[bool] = None
-        # Store active HVAC mode
         self._last_active_hvac_mode: Optional[HVACMode] = None
 
         self._update_supported_attributes()
@@ -126,7 +125,9 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
 
         if self._can_write_dp(DP_HVAC_MODE):
             features |= ClimateEntityFeature.PRESET_MODE
-            self._attr_preset_modes = sorted(list(set(GIRA_MODE_TO_HA_PRESET_MAP.values())))
+            self._attr_preset_modes = sorted(
+                list(set(GIRA_MODE_TO_HA_PRESET_MAP.values()))
+            )
 
         self._attr_supported_features = features
 
@@ -140,7 +141,9 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                         dp_value_info["uid"], dp_value_info["value"]
                     )
         except Exception as e:
-            _LOGGER.error("Error fetching initial state for climate %s: %s", self.name, e)
+            _LOGGER.error(
+                "Error fetching initial state for climate %s: %s", self.name, e
+            )
 
     def _update_state_from_dp_value(self, dp_uid_updated: str, value: Any) -> bool:
         """Update internal state. Returns True if state changed."""
@@ -162,7 +165,12 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                         self._cooling_active_dp_value = bool(int(value))
                     changed = True
                 except (ValueError, TypeError):
-                    _LOGGER.warning("Could not parse value '%s' for climate DP %s", value, dp_name)
+                    _LOGGER.warning(
+                        "Could not parse value '%s' for climate DP %s on entity %s",
+                        value,
+                        dp_name,
+                        self.name,
+                    )
                 break
 
         if changed:
@@ -182,13 +190,13 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         else:
             self._attr_hvac_action = HVACAction.IDLE
 
-        # Identify last known active HVAC mode
+        # 2. Store last known active HVAC mode
         if self._attr_hvac_action == HVACAction.HEATING:
             self._last_active_hvac_mode = HVACMode.HEAT
         elif self._attr_hvac_action == HVACAction.COOLING:
             self._last_active_hvac_mode = HVACMode.COOL
 
-        # Restore last known active HVAC mode
+        # 3. Restore last known active HVAC mode
         if self._is_on_dp_value is False:
             self._attr_hvac_mode = HVACMode.OFF
         else:
@@ -201,13 +209,18 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
 
         # 4. Preset Mode
         if self._attr_hvac_mode != HVACMode.OFF and self._current_gira_mode is not None:
-            self._attr_preset_mode = GIRA_MODE_TO_HA_PRESET_MAP.get(self._current_gira_mode)
+            self._attr_preset_mode = GIRA_MODE_TO_HA_PRESET_MAP.get(
+                self._current_gira_mode
+            )
         else:
             self._attr_preset_mode = None
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is not None:
+            _LOGGER.debug(
+                "Setting temperature for %s to %s", self.name, temperature
+            )
             await self._send_command(DP_TARGET_TEMP, temperature)
             self._attr_target_temperature = temperature
             self.async_write_ha_state()
@@ -215,12 +228,14 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
         if (gira_mode_val := HA_PRESET_TO_GIRA_MODE_MAP.get(preset_mode)) is not None:
+            _LOGGER.debug("Setting preset_mode for %s to %s", self.name, preset_mode)
             await self._send_command(DP_HVAC_MODE, gira_mode_val)
             self._attr_preset_mode = preset_mode
             self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new target hvac mode."""
+        _LOGGER.debug("Setting hvac_mode for %s to %s", self.name, hvac_mode)
         if hvac_mode == HVACMode.OFF:
             await self.async_turn_off()
         elif hvac_mode in self.hvac_modes:
@@ -229,6 +244,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_turn_on(self) -> None:
         """Turn the climate device on."""
         if self._can_write_dp(DP_HVAC_ON_OFF):
+            _LOGGER.debug("Turning on climate device %s", self.name)
             await self._send_command(DP_HVAC_ON_OFF, 1)
             self._is_on_dp_value = True
             self._determine_hvac_and_preset_states()
@@ -237,6 +253,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_turn_off(self) -> None:
         """Turn the climate device off."""
         if self._can_write_dp(DP_HVAC_ON_OFF):
+            _LOGGER.debug("Turning off climate device %s", self.name)
             await self._send_command(DP_HVAC_ON_OFF, 0)
             self._is_on_dp_value = False
             self._determine_hvac_and_preset_states()
