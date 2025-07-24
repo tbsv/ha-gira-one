@@ -11,20 +11,20 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the Gira One Server. Check host and network.",
-      "invalid_auth": "Invalid username or password.",
-      "registration_failed": "Failed to register client with the Gira One Server.",
-      "device_locked": "The Gira One Server is currently locked. Try again later.",
-      "api_error": "An unexpected API error occurred.",
-      "unknown": "An unknown error occurred."
+      "cannot_connect": "Die Verbindung zum Gira One Server konnte nicht hergestellt werden. Überprüfen Sie Host und Netzwerk.",
+      "invalid_auth": "Ungültiger Benutzername oder ungültiges Passwort.",
+      "registration_failed": "Die Registrierung des Clients beim Gira One Server ist fehlgeschlagen.",
+      "device_locked": "Der Gira One Server ist derzeit gesperrt. Versuchen Sie es später erneut.",
+      "api_error": "Ein unerwarteter API-Fehler ist aufgetreten.",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten."
     },
     "abort": {
-      "already_configured": "This Gira One Server is already configured."
+      "already_configured": "Dieser Gira One Server ist bereits konfiguriert."
     }
   },
   "entity": {
     "climate": {
-      "_": {
+      "gira_one": {
         "state_attributes": {
           "preset_mode": {
             "state": {

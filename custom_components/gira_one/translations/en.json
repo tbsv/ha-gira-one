@@ -24,7 +24,7 @@
   },
   "entity": {
     "climate": {
-      "_": {
+      "gira_one": {
         "state_attributes": {
           "preset_mode": {
             "state": {

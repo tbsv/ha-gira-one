@@ -73,7 +73,7 @@ async def async_setup_entry(
 class GiraClimate(GiraOneEntity, ClimateEntity):
     """Representation of a Gira Climate device."""
 
-    _attr_translation_key = "gira_one_climate_device"
+    _attr_translation_key = "gira_one"
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _enable_turn_on_off_backwards_compatibility = False
     _attr_assumed_state = True
