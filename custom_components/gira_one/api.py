@@ -68,8 +68,9 @@ class GiraApiClient:
         if requires_auth:
             if is_registration:
                 if not self._username or not self._password:
+                    msg = "Username or password missing for registration."
                     raise GiraApiAuthError(
-                        "Username or password missing for registration."
+                        msg
                     )
                 auth = aiohttp.BasicAuth(self._username, self._password)
             elif self._token and not token_in_path:
@@ -77,8 +78,9 @@ class GiraApiClient:
                     params = {}
                 params["token"] = self._token
             elif not self._token:
+                msg = f"Token missing for authenticated request to {path}"
                 raise GiraApiAuthError(
-                    f"Token missing for authenticated request to {path}"
+                    msg
                 )
 
         _LOGGER.debug(
@@ -96,11 +98,13 @@ class GiraApiClient:
                     auth=auth,
                 )
         except aiohttp.ClientError as err:
-            _LOGGER.error("Request failed for %s %s: %s", method, url, err)
-            raise GiraApiConnectionError(f"Request failed: {err}") from err
+            _LOGGER.exception("Request failed for %s %s: %s", method, url, err)
+            msg = f"Request failed: {err}"
+            raise GiraApiConnectionError(msg) from err
         except TimeoutError:
-            _LOGGER.error("Request timed out for %s %s", method, url)
-            raise GiraApiConnectionError(f"Request timed out: {url}")
+            _LOGGER.exception("Request timed out for %s %s", method, url)
+            msg = f"Request timed out: {url}"
+            raise GiraApiConnectionError(msg)
 
         status_code = response.status
         _LOGGER.debug("Response status from %s %s: %s", method, url, status_code)
@@ -125,15 +129,18 @@ class GiraApiClient:
                 error_message,
             )
             if status_code in [401, 403]:
+                msg = f"Authentication failed: {error_message} (Code: {error_code})"
                 raise GiraApiAuthError(
-                    f"Authentication failed: {error_message} (Code: {error_code})"
+                    msg
                 )
             if status_code == 423:
+                msg = f"Device locked: {error_message} (Code: {error_code})"
                 raise GiraApiRequestError(
-                    f"Device locked: {error_message} (Code: {error_code})"
+                    msg
                 )
+            msg = f"API Error {status_code}: [{error_code}] {error_message}"
             raise GiraApiRequestError(
-                f"API Error {status_code}: [{error_code}] {error_message}"
+                msg
             )
 
         return status_code, response_data
@@ -145,7 +152,8 @@ class GiraApiClient:
         )
         if status == 200 and data.get("info") == "GDS-REST-API":
             return data
-        raise GiraApiConnectionError("API availability check failed.")
+        msg = "API availability check failed."
+        raise GiraApiConnectionError(msg)
 
     async def register_client(self, client_id: str) -> str:
         """Register a client or refresh its token using username/password."""
@@ -162,7 +170,8 @@ class GiraApiClient:
             self._token = data["token"]
             _LOGGER.info("Client token acquired successfully.")
             return self._token
-        raise GiraApiRequestError("Client registration/token refresh failed.")
+        msg = "Client registration/token refresh failed."
+        raise GiraApiRequestError(msg)
 
     async def unregister_client(self) -> None:
         """Unregister this client from the Gira device."""
@@ -183,7 +192,7 @@ class GiraApiClient:
             _LOGGER.warning("Failed to unregister: token was already invalid.")
             self._token = None
         except GiraApiRequestError as e:
-            _LOGGER.error("Failed to unregister client: %s", e)
+            _LOGGER.exception("Failed to unregister client: %s", e)
 
     async def get_server_details(self) -> dict[str, Any]:
         """Get the server details from info endpoint."""
@@ -249,7 +258,7 @@ class GiraApiClient:
             )
             return status == 200
         except GiraApiClientError as e:
-            _LOGGER.error("Failed to remove callbacks during unload: %s", e)
+            _LOGGER.exception("Failed to remove callbacks during unload: %s", e)
             return False
 
     @property

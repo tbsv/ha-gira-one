@@ -124,12 +124,12 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         if self._has_dp(DP_HVAC_COOLING_ACTIVE):
             hvac_modes.append(HVACMode.COOL)
 
-        self._attr_hvac_modes = sorted(list(set(hvac_modes)))
+        self._attr_hvac_modes = sorted(set(hvac_modes))
 
         if self._can_write_dp(DP_HVAC_MODE):
             features |= ClimateEntityFeature.PRESET_MODE
             self._attr_preset_modes = sorted(
-                list(set(GIRA_MODE_TO_HA_PRESET_MAP.values()))
+                set(GIRA_MODE_TO_HA_PRESET_MAP.values())
             )
 
         self._attr_supported_features = features
@@ -144,7 +144,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                         dp_value_info["uid"], dp_value_info["value"]
                     )
         except Exception as e:
-            _LOGGER.error(
+            _LOGGER.exception(
                 "Error fetching initial state for climate %s: %s", self.name, e
             )
 

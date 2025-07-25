@@ -87,7 +87,7 @@ class GiraOneEntity(Entity, ABC):
         try:
             await self._api.set_value(dp_uid, value)
         except GiraApiClientError as e:
-            _LOGGER.error(
+            _LOGGER.exception(
                 "Error sending command for '%s' (DP: '%s'): %s", self.name, dp_name, e
             )
 

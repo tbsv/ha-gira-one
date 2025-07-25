@@ -91,13 +91,13 @@ class GiraOneConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
             except GiraApiAuthError:
-                _LOGGER.error("Authentication failed during setup")
+                _LOGGER.exception("Authentication failed during setup")
                 errors["base"] = "invalid_auth"
             except GiraApiConnectionError:
-                _LOGGER.error("Connection error during setup")
+                _LOGGER.exception("Connection error during setup")
                 errors["base"] = "cannot_connect"
             except GiraApiRequestError as e:
-                _LOGGER.error("API request error during setup: %s", e)
+                _LOGGER.exception("API request error during setup: %s", e)
                 if "locked" in str(e).lower():
                     errors["base"] = "device_locked"
                 else:

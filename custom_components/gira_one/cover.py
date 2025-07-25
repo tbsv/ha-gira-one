@@ -123,7 +123,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
                         dp_value_info["uid"], dp_value_info["value"]
                     )
         except Exception as e:
-            _LOGGER.error("Error fetching initial state for cover %s: %s", self.name, e)
+            _LOGGER.exception("Error fetching initial state for cover %s: %s", self.name, e)
 
     def _update_state_from_dp_value(self, dp_uid_updated: str, value: Any) -> bool:
         """Update internal state. Returns True if state changed."""

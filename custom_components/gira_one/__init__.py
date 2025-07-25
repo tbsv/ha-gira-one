@@ -1,6 +1,7 @@
 """Gira One integration."""
 
 import logging
+from typing import Never
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
@@ -70,10 +71,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.info("Client re-registered successfully, new token stored.")
             ui_config = await api_client.get_ui_config()  # Retry with new token
         except (GiraApiAuthError, GiraApiRequestError) as e:
-            _LOGGER.error("Failed to re-register client: %s", e)
+            _LOGGER.exception("Failed to re-register client: %s", e)
             return False
     except (GiraApiConnectionError, GiraApiRequestError) as e:
-        _LOGGER.error("Failed to connect or communicate with Gira One Server: %s", e)
+        _LOGGER.exception("Failed to connect or communicate with Gira One Server: %s", e)
         return False  # Defer setup, HA will retry
 
     _LOGGER.info("Successfully connected to Gira IoT API and fetched UI config.")
@@ -136,7 +137,7 @@ async def _async_register_callbacks(
             hass, require_ssl=True, allow_internal=False, prefer_external=True
         )
     except NoURLAvailableError:
-        _LOGGER.error(
+        _LOGGER.exception(
             "Cannot determine external SSL URL for Gira callbacks. "
             "Please configure Home Assistant's external_url with SSL."
         )
@@ -155,15 +156,13 @@ async def _async_register_callbacks(
         await api_client.register_callbacks(service_callback_url, value_callback_url)
         _LOGGER.info("Gira callbacks registered successfully.")
     except GiraApiClientError as e:
-        _LOGGER.error("Failed to register Gira callbacks: %s", e)
+        _LOGGER.exception("Failed to register Gira callbacks: %s", e)
         return False
     return True
 
 
 async def _async_cleanup_resources(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """
-    Centralized function to clean up resources, unregister client and callbacks.
-    """
+    """Centralized function to clean up resources, unregister client and callbacks."""
     api_client: GiraApiClient = hass.data[DOMAIN][entry.entry_id].get(DATA_API_CLIENT)
     if not api_client:
         return
@@ -172,11 +171,11 @@ async def _async_cleanup_resources(hass: HomeAssistant, entry: ConfigEntry) -> N
     try:
         await api_client.remove_callbacks()
     except GiraApiClientError as e:
-        _LOGGER.error("Error removing Gira callbacks: %s", e)
+        _LOGGER.exception("Error removing Gira callbacks: %s", e)
     try:
         await api_client.unregister_client()
     except GiraApiClientError as e:
-        _LOGGER.error("Error unregistering Gira client: %s", e)
+        _LOGGER.exception("Error unregistering Gira client: %s", e)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -200,7 +199,7 @@ class BaseGiraCallbackView(HomeAssistantView):
     name = "OVERRIDE_IN_SUBCLASS_WITH_API_PREFIX"
     cors_allowed = True
 
-    def __init__(self, hass: HomeAssistant, entry_id: str):
+    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
         self.hass = hass
         self.entry_id = entry_id
 
@@ -232,7 +231,7 @@ class BaseGiraCallbackView(HomeAssistantView):
         return self.json({}, status_code=200)
 
     @callback
-    async def process_events(self, events: list, api_client: GiraApiClient):
+    async def process_events(self, events: list, api_client: GiraApiClient) -> Never:
         """Process the events from the callback."""
         raise NotImplementedError
 
@@ -244,7 +243,7 @@ class GiraServiceCallbackView(BaseGiraCallbackView):
     name = f"api:{DOMAIN}:service_callback"
 
     @callback
-    async def process_events(self, events: list, api_client: GiraApiClient):
+    async def process_events(self, events: list, api_client: GiraApiClient) -> None:
         """Process service events."""
         for event_data in events:
             event_type = event_data.get("event")
@@ -275,7 +274,7 @@ class GiraValueCallbackView(BaseGiraCallbackView):
     name = f"api:{DOMAIN}:value_callback"
 
     @callback
-    async def process_events(self, events: list, api_client: GiraApiClient):
+    async def process_events(self, events: list, api_client: GiraApiClient) -> None:
         """Process value update events."""
         for event_data in events:
             uid = event_data.get("uid")
