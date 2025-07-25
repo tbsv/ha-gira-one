@@ -2,34 +2,34 @@
 
 import logging
 
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.network import get_url, NoURLAvailableError
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 
 from .api import (
     GiraApiAuthError,
     GiraApiClient,
+    GiraApiClientError,
     GiraApiConnectionError,
     GiraApiRequestError,
-    GiraApiClientError,
 )
 from .const import (
-    DOMAIN,
-    PLATFORMS,
     CONF_HOST,
-    CONF_USERNAME,
     CONF_PASSWORD,
+    CONF_USERNAME,
     DATA_API_CLIENT,
     DATA_UI_CONFIG,
-    EVENT_TYPE_TEST,
+    DOMAIN,
     EVENT_TYPE_PROJECT_CONFIG_CHANGED,
-    EVENT_TYPE_UI_CONFIG_CHANGED,
     EVENT_TYPE_RESTART,
     EVENT_TYPE_STARTUP,
+    EVENT_TYPE_TEST,
+    EVENT_TYPE_UI_CONFIG_CHANGED,
+    PLATFORMS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -234,7 +234,7 @@ class BaseGiraCallbackView(HomeAssistantView):
     @callback
     async def process_events(self, events: list, api_client: GiraApiClient):
         """Process the events from the callback."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class GiraServiceCallbackView(BaseGiraCallbackView):

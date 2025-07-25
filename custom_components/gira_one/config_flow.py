@@ -1,7 +1,7 @@
 """Config flow for the Gira One integration."""
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -21,8 +21,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def _async_validate_input(
-    hass: HomeAssistant, data: Dict[str, Any]
-) -> Dict[str, Any]:
+    hass: HomeAssistant, data: dict[str, Any]
+) -> dict[str, Any]:
     """
     Validate the user input allows us to connect.
 

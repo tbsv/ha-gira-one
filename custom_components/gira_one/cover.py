@@ -1,7 +1,7 @@
 """Platform for Gira One Cover entities."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
@@ -40,7 +40,7 @@ async def async_setup_entry(
     api_client: GiraApiClient = hass.data[config_entry.domain][config_entry.entry_id][
         DATA_API_CLIENT
     ]
-    ui_config: Dict[str, Any] = hass.data[config_entry.domain][config_entry.entry_id][
+    ui_config: dict[str, Any] = hass.data[config_entry.domain][config_entry.entry_id][
         DATA_UI_CONFIG
     ]
 
@@ -69,13 +69,13 @@ class GiraCover(GiraOneEntity, CoverEntity):
         self,
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
-        function_data: Dict[str, Any],
+        function_data: dict[str, Any],
     ) -> None:
         """Initialize the Gira Cover."""
         super().__init__(config_entry, api_client, function_data)
 
-        self._attr_current_cover_position: Optional[int] = None
-        self._attr_current_cover_tilt_position: Optional[int] = None
+        self._attr_current_cover_position: int | None = None
+        self._attr_current_cover_tilt_position: int | None = None
         self._attr_is_moving: bool = False
         self._attr_is_opening: bool = False
         self._attr_is_closing: bool = False
@@ -88,7 +88,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
         self._update_supported_features()
 
     @property
-    def is_closed(self) -> Optional[bool]:
+    def is_closed(self) -> bool | None:
         """Return if the cover is closed or not."""
         if self.current_cover_position is None:
             return None

@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
@@ -10,9 +10,9 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 
+from . import SIGNAL_DATA_UPDATE
 from .api import GiraApiClient, GiraApiClientError
 from .const import DOMAIN
-from . import SIGNAL_DATA_UPDATE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class GiraOneEntity(Entity, ABC):
         self,
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
-        function_data: Dict[str, Any],
+        function_data: dict[str, Any],
     ) -> None:
         """Initialize the base Gira One entity."""
         self._config_entry_id = config_entry.entry_id
@@ -50,11 +50,11 @@ class GiraOneEntity(Entity, ABC):
             ),
         )
 
-        self._data_points: Dict[str, Dict[str, Any]] = {
+        self._data_points: dict[str, dict[str, Any]] = {
             dp["name"]: dp for dp in function_data.get("dataPoints", [])
         }
 
-    def _get_dp_uid(self, dp_name: str) -> Optional[str]:
+    def _get_dp_uid(self, dp_name: str) -> str | None:
         """Get the UID for a data point by its name."""
         return self._data_points.get(dp_name, {}).get("uid")
 

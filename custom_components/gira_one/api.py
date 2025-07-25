@@ -1,12 +1,10 @@
 """API client for Gira IoT REST API."""
 
-import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import aiohttp
 import async_timeout
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -37,8 +35,8 @@ class GiraApiClient:
     def __init__(
         self,
         host: str,
-        username: Optional[str],
-        password: Optional[str],
+        username: str | None,
+        password: str | None,
         hass: HomeAssistant,
     ) -> None:
         """Initialize the API client."""
@@ -49,19 +47,19 @@ class GiraApiClient:
             hass, verify_ssl=False
         )  # Gira IoT API uses self-signed certs
         self._base_url = f"https://{self._host}/api"
-        self._token: Optional[str] = None
-        self._client_id: Optional[str] = None
+        self._token: str | None = None
+        self._client_id: str | None = None
 
     async def _request(
         self,
         method: str,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        json_data: dict[str, Any] | None = None,
         requires_auth: bool = True,
         is_registration: bool = False,
         token_in_path: bool = False,
-    ) -> Tuple[int, Dict[str, Any]]:
+    ) -> tuple[int, dict[str, Any]]:
         """Make a generic API request."""
         url = f"{self._base_url}{path}"
         headers = {"Accept": "application/json"}
@@ -100,7 +98,7 @@ class GiraApiClient:
         except aiohttp.ClientError as err:
             _LOGGER.error("Request failed for %s %s: %s", method, url, err)
             raise GiraApiConnectionError(f"Request failed: {err}") from err
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _LOGGER.error("Request timed out for %s %s", method, url)
             raise GiraApiConnectionError(f"Request timed out: {url}")
 
@@ -140,7 +138,7 @@ class GiraApiClient:
 
         return status_code, response_data
 
-    async def check_api_availability(self) -> Dict[str, Any]:
+    async def check_api_availability(self) -> dict[str, Any]:
         """Check if the Gira IoT REST API is available."""
         status, data = await self._request(
             "GET", f"/{API_VERSION}/", requires_auth=False
@@ -187,12 +185,12 @@ class GiraApiClient:
         except GiraApiRequestError as e:
             _LOGGER.error("Failed to unregister client: %s", e)
 
-    async def get_server_details(self) -> Dict[str, Any]:
+    async def get_server_details(self) -> dict[str, Any]:
         """Get the server details from info endpoint."""
         status, data = await self._request("GET", f"/{API_VERSION}")
         return data
 
-    async def get_ui_config(self) -> Dict[str, Any]:
+    async def get_ui_config(self) -> dict[str, Any]:
         """Get the UI configuration."""
         params = {"expand": "dataPointFlags,locations,trades"}
         status, data = await self._request(
@@ -200,7 +198,7 @@ class GiraApiClient:
         )
         return data
 
-    async def get_value(self, uid: str) -> Dict[str, Any]:
+    async def get_value(self, uid: str) -> dict[str, Any]:
         """Get value(s) for a specific UID (datapoint or function)."""
         status, data = await self._request("GET", f"/{API_VERSION}/values/{uid}")
         return data
@@ -213,7 +211,7 @@ class GiraApiClient:
         )
         return status == 200
 
-    async def set_multiple_values(self, values_payload: List[Dict[str, Any]]) -> bool:
+    async def set_multiple_values(self, values_payload: list[dict[str, Any]]) -> bool:
         """Set multiple values."""
         payload = {"values": values_payload}
         status, _ = await self._request(
@@ -255,12 +253,12 @@ class GiraApiClient:
             return False
 
     @property
-    def token(self) -> Optional[str]:
+    def token(self) -> str | None:
         """Return the current access token."""
         return self._token
 
     @property
-    def client_id(self) -> Optional[str]:
+    def client_id(self) -> str | None:
         """Return the current client ID."""
         return self._client_id
 

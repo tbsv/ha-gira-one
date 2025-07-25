@@ -1,7 +1,7 @@
 """Platform for Gira One Climate entities."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from homeassistant.components.climate import (
     ClimateEntity,
@@ -16,7 +16,7 @@ from homeassistant.components.climate.const import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api import GiraApiClient
@@ -85,32 +85,32 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         self,
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
-        function_data: Dict[str, Any],
+        function_data: dict[str, Any],
     ) -> None:
         """Initialize the Gira Climate device."""
         super().__init__(config_entry, api_client, function_data)
 
         # Climate-specific attributes
-        self._attr_current_temperature: Optional[float] = None
-        self._attr_target_temperature: Optional[float] = None
-        self._attr_hvac_mode: Optional[HVACMode] = None
-        self._attr_hvac_action: Optional[HVACAction] = None
-        self._attr_preset_mode: Optional[str] = None
-        self._attr_preset_modes: List[str] = []
+        self._attr_current_temperature: float | None = None
+        self._attr_target_temperature: float | None = None
+        self._attr_hvac_mode: HVACMode | None = None
+        self._attr_hvac_action: HVACAction | None = None
+        self._attr_preset_mode: str | None = None
+        self._attr_preset_modes: list[str] = []
 
         # Internal states for logic
-        self._is_on_dp_value: Optional[bool] = None
-        self._current_gira_mode: Optional[int] = None
-        self._heating_active_dp_value: Optional[bool] = None
-        self._cooling_active_dp_value: Optional[bool] = None
-        self._last_active_hvac_mode: Optional[HVACMode] = None
+        self._is_on_dp_value: bool | None = None
+        self._current_gira_mode: int | None = None
+        self._heating_active_dp_value: bool | None = None
+        self._cooling_active_dp_value: bool | None = None
+        self._last_active_hvac_mode: HVACMode | None = None
 
         self._update_supported_attributes()
 
     def _update_supported_attributes(self) -> None:
         """Determine supported features and preset modes."""
         features = ClimateEntityFeature(0)
-        hvac_modes: List[HVACMode] = []
+        hvac_modes: list[HVACMode] = []
 
         if self._can_write_dp(DP_TARGET_TEMP):
             features |= ClimateEntityFeature.TARGET_TEMPERATURE
@@ -202,13 +202,12 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         # 3. Restore last known active HVAC mode
         if self._is_on_dp_value is False:
             self._attr_hvac_mode = HVACMode.OFF
-        else:
-            if self._last_active_hvac_mode:
-                self._attr_hvac_mode = self._last_active_hvac_mode
-            elif HVACMode.HEAT in self.hvac_modes:
-                self._attr_hvac_mode = HVACMode.HEAT
-            elif HVACMode.COOL in self.hvac_modes:
-                self._attr_hvac_mode = HVACMode.COOL
+        elif self._last_active_hvac_mode:
+            self._attr_hvac_mode = self._last_active_hvac_mode
+        elif HVACMode.HEAT in self.hvac_modes:
+            self._attr_hvac_mode = HVACMode.HEAT
+        elif HVACMode.COOL in self.hvac_modes:
+            self._attr_hvac_mode = HVACMode.COOL
 
         # 4. Preset Mode
         if self._attr_hvac_mode != HVACMode.OFF and self._current_gira_mode is not None:

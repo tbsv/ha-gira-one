@@ -1,8 +1,9 @@
 """Platform for Gira One Light entities."""
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
+import homeassistant.util.color as color_util
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_COLOR_TEMP_KELVIN,
@@ -12,16 +13,15 @@ from homeassistant.components.light import (
     LightEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-import homeassistant.util.color as color_util
 
 from .api import GiraApiClient
 from .const import (
     DATA_API_CLIENT,
     DATA_UI_CONFIG,
-    DP_BRIGHTNESS,
     DP_BLUE,
+    DP_BRIGHTNESS,
     DP_COLOR_TEMPERATURE,
     DP_GREEN,
     DP_ON_OFF,
@@ -44,7 +44,7 @@ async def async_setup_entry(
     api_client: GiraApiClient = hass.data[config_entry.domain][config_entry.entry_id][
         DATA_API_CLIENT
     ]
-    ui_config: Dict[str, Any] = hass.data[config_entry.domain][config_entry.entry_id][
+    ui_config: dict[str, Any] = hass.data[config_entry.domain][config_entry.entry_id][
         DATA_UI_CONFIG
     ]
 
@@ -70,7 +70,7 @@ class GiraLight(GiraOneEntity, LightEntity):
         self,
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
-        function_data: Dict[str, Any],
+        function_data: dict[str, Any],
     ) -> None:
         """Initialize the Gira Light."""
         super().__init__(config_entry, api_client, function_data)
