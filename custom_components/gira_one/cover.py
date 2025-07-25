@@ -90,9 +90,10 @@ class GiraCover(GiraOneEntity, CoverEntity):
     @property
     def is_closed(self) -> bool | None:
         """Return if the cover is closed or not."""
+        # Home Assistant standard: 0 is closed.
         if self.current_cover_position is None:
             return None
-        return self.current_cover_position == 100
+        return self.current_cover_position == 0
 
     def _update_supported_features(self) -> None:
         """Determine supported features based on all available data points."""
@@ -132,14 +133,18 @@ class GiraCover(GiraOneEntity, CoverEntity):
             if dp_info["uid"] == dp_uid_updated:
                 try:
                     if dp_name == DP_POSITION:
-                        position = int(float(value))
-                        if self._attr_current_cover_position != position:
-                            self._attr_current_cover_position = position
+                        # Invert: Gira (0=open, 100=closed) to HA (100=open, 0=closed)
+                        gira_position = int(float(value))
+                        ha_position = 100 - gira_position
+                        if self._attr_current_cover_position != ha_position:
+                            self._attr_current_cover_position = ha_position
                             changed = True
                     elif dp_name == DP_SLAT_POSITION:
-                        tilt_position = int(float(value))
-                        if self._attr_current_cover_tilt_position != tilt_position:
-                            self._attr_current_cover_tilt_position = tilt_position
+                        # KORREKTUR: Gira-Lamellenposition (0=offen, 100=geschlossen) in HA-Position (100=offen, 0=geschlossen) umrechnen.
+                        gira_tilt_position = int(float(value))
+                        ha_tilt_position = 100 - gira_tilt_position
+                        if self._attr_current_cover_tilt_position != ha_tilt_position:
+                            self._attr_current_cover_tilt_position = ha_tilt_position
                             changed = True
                     elif dp_name == DP_MOVEMENT:
                         is_moving_now = bool(int(value))
@@ -160,12 +165,13 @@ class GiraCover(GiraOneEntity, CoverEntity):
         return changed
 
     async def async_open_cover(self, **kwargs: Any) -> None:
-        """Open the cover by sending an 'Up' command."""
+        """Open the cover."""
         _LOGGER.debug("Opening cover %s", self.name)
         if self._has_dp(DP_UP_DOWN):
             await self._send_command(DP_UP_DOWN, 0)
         else:
-            await self.async_set_cover_position(position=0)
+            # Home Assistant standard: 100 is open.
+            await self.async_set_cover_position(position=100)
 
         # Optimistic update
         self._attr_is_moving = True
@@ -174,12 +180,13 @@ class GiraCover(GiraOneEntity, CoverEntity):
         self.async_write_ha_state()
 
     async def async_close_cover(self, **kwargs: Any) -> None:
-        """Close the cover by sending a 'Down' command."""
+        """Close the cover."""
         _LOGGER.debug("Closing cover %s", self.name)
         if self._has_dp(DP_UP_DOWN):
             await self._send_command(DP_UP_DOWN, 1)
         else:
-            await self.async_set_cover_position(position=100)
+            # Home Assistant standard: 0 is closed.
+            await self.async_set_cover_position(position=0)
 
         # Optimistic update
         self._attr_is_moving = True
@@ -201,22 +208,26 @@ class GiraCover(GiraOneEntity, CoverEntity):
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Set the cover position."""
-        position = kwargs[ATTR_POSITION]
-        _LOGGER.debug("Setting cover %s to position %s", self.name, position)
-        await self._send_command(DP_POSITION, position)
+        ha_position = kwargs[ATTR_POSITION]
+        # Invert: HA (100=open, 0=closed) to Gira (0=open, 100=closed)
+        gira_position = 100 - ha_position
+        _LOGGER.debug("Setting cover %s to HA position %s (Gira: %s)", self.name, ha_position, gira_position)
+        await self._send_command(DP_POSITION, gira_position)
 
         # Optimistic update
-        self._attr_current_cover_position = position
+        self._attr_current_cover_position = ha_position
         self._attr_is_moving = True
         self.async_write_ha_state()
 
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
         """Open the cover tilt."""
-        await self.async_set_cover_tilt_position(tilt_position=0)
+        # Home Assistant standard: 100 is open.
+        await self.async_set_cover_tilt_position(tilt_position=100)
 
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
         """Close the cover tilt."""
-        await self.async_set_cover_tilt_position(tilt_position=100)
+        # Home Assistant standard: 0 is closed.
+        await self.async_set_cover_tilt_position(tilt_position=0)
 
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
@@ -230,11 +241,13 @@ class GiraCover(GiraOneEntity, CoverEntity):
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Set the cover tilt position."""
-        tilt_position = kwargs[ATTR_TILT_POSITION]
-        _LOGGER.debug("Setting cover tilt %s to position %s", self.name, tilt_position)
-        await self._send_command(DP_SLAT_POSITION, tilt_position)
+        # KORREKTUR: HA-Lamellenposition in Gira-Position umrechnen.
+        ha_tilt_position = kwargs[ATTR_TILT_POSITION]
+        gira_tilt_position = 100 - ha_tilt_position
+        _LOGGER.debug("Setting cover tilt %s to HA position %s (Gira: %s)", self.name, ha_tilt_position, gira_tilt_position)
+        await self._send_command(DP_SLAT_POSITION, gira_tilt_position)
 
         # Optimistic update
-        self._attr_current_cover_tilt_position = tilt_position
+        self._attr_current_cover_tilt_position = ha_tilt_position
         self._attr_is_moving = True
         self.async_write_ha_state()
