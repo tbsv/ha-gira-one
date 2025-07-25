@@ -35,9 +35,9 @@ class GiraOneEntity(Entity, ABC):
         self._function_data = function_data
 
         self._attr_unique_id = function_data["uid"]
-        self._attr_name = function_data.get(
-            "displayName"
-        ) or f"Gira Entity {self._attr_unique_id}"
+        self._attr_name = (
+            function_data.get("displayName") or f"Gira Entity {self._attr_unique_id}"
+        )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id)},
             name=self.name,

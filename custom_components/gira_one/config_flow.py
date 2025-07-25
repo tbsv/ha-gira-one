@@ -20,7 +20,9 @@ from .const import CLIENT_URN_PREFIX, DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 
-async def _async_validate_input(hass: HomeAssistant, data: Dict[str, Any]) -> Dict[str, Any]:
+async def _async_validate_input(
+    hass: HomeAssistant, data: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Validate the user input allows us to connect.
 

@@ -46,7 +46,10 @@ async def async_setup_entry(
 
     entities = []
     for function_data in ui_config.get("functions", []):
-        if GIRA_FUNCTION_TYPE_TO_HA_PLATFORM.get(function_data.get("functionType")) == COVER:
+        if (
+            GIRA_FUNCTION_TYPE_TO_HA_PLATFORM.get(function_data.get("functionType"))
+            == COVER
+        ):
             entities.append(GiraCover(config_entry, api_client, function_data))
             _LOGGER.info(
                 "Adding Gira Cover: %s (UID: %s)",
@@ -228,9 +231,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Set the cover tilt position."""
         tilt_position = kwargs[ATTR_TILT_POSITION]
-        _LOGGER.debug(
-            "Setting cover tilt %s to position %s", self.name, tilt_position
-        )
+        _LOGGER.debug("Setting cover tilt %s to position %s", self.name, tilt_position)
         await self._send_command(DP_SLAT_POSITION, tilt_position)
 
         # Optimistic update

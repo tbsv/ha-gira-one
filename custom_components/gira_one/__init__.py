@@ -219,7 +219,9 @@ class BaseGiraCallbackView(HomeAssistantView):
         )
 
         if not api_client or not api_client.token:
-            _LOGGER.warning("Callback received for unconfigured entry %s.", self.entry_id)
+            _LOGGER.warning(
+                "Callback received for unconfigured entry %s.", self.entry_id
+            )
             return self.json_message("Client not configured", status_code=404)
 
         if data.get("token") != api_client.token:

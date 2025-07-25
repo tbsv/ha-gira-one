@@ -79,7 +79,9 @@ class GiraApiClient:
                     params = {}
                 params["token"] = self._token
             elif not self._token:
-                raise GiraApiAuthError(f"Token missing for authenticated request to {path}")
+                raise GiraApiAuthError(
+                    f"Token missing for authenticated request to {path}"
+                )
 
         _LOGGER.debug(
             "Request: %s %s (params=%s, json=%s)", method, url, params, json_data
@@ -211,9 +213,7 @@ class GiraApiClient:
         )
         return status == 200
 
-    async def set_multiple_values(
-        self, values_payload: List[Dict[str, Any]]
-    ) -> bool:
+    async def set_multiple_values(self, values_payload: List[Dict[str, Any]]) -> bool:
         """Set multiple values."""
         payload = {"values": values_payload}
         status, _ = await self._request(

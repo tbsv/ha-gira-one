@@ -60,7 +60,10 @@ async def async_setup_entry(
     ui_config = hass.data[config_entry.domain][config_entry.entry_id][DATA_UI_CONFIG]
     entities = []
     for function_data in ui_config.get("functions", []):
-        if GIRA_FUNCTION_TYPE_TO_HA_PLATFORM.get(function_data.get("functionType")) == CLIMATE:
+        if (
+            GIRA_FUNCTION_TYPE_TO_HA_PLATFORM.get(function_data.get("functionType"))
+            == CLIMATE
+        ):
             entities.append(GiraClimate(config_entry, api_client, function_data))
             _LOGGER.info(
                 "Adding Gira Climate: %s (UID: %s)",
@@ -218,9 +221,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is not None:
-            _LOGGER.debug(
-                "Setting temperature for %s to %s", self.name, temperature
-            )
+            _LOGGER.debug("Setting temperature for %s to %s", self.name, temperature)
             await self._send_command(DP_TARGET_TEMP, temperature)
             self._attr_target_temperature = temperature
             self.async_write_ha_state()

@@ -50,7 +50,10 @@ async def async_setup_entry(
 
     entities = []
     for function_data in ui_config.get("functions", []):
-        if GIRA_FUNCTION_TYPE_TO_HA_PLATFORM.get(function_data.get("functionType")) == LIGHT:
+        if (
+            GIRA_FUNCTION_TYPE_TO_HA_PLATFORM.get(function_data.get("functionType"))
+            == LIGHT
+        ):
             entities.append(GiraLight(config_entry, api_client, function_data))
             _LOGGER.info(
                 "Adding Gira Light: %s (UID: %s)",
@@ -179,18 +182,40 @@ class GiraLight(GiraOneEntity, LightEntity):
         if ATTR_BRIGHTNESS in kwargs and self._has_dp(DP_BRIGHTNESS):
             ha_brightness = kwargs[ATTR_BRIGHTNESS]
             gira_brightness = round((ha_brightness / 255) * 100)
-            payloads.append({"uid": self._get_dp_uid(DP_BRIGHTNESS), "value": gira_brightness})
+            payloads.append(
+                {"uid": self._get_dp_uid(DP_BRIGHTNESS), "value": gira_brightness}
+            )
 
         # Color Temperature
         if ATTR_COLOR_TEMP_KELVIN in kwargs and self._has_dp(DP_COLOR_TEMPERATURE):
-            payloads.append({"uid": self._get_dp_uid(DP_COLOR_TEMPERATURE), "value": kwargs[ATTR_COLOR_TEMP_KELVIN]})
+            payloads.append(
+                {
+                    "uid": self._get_dp_uid(DP_COLOR_TEMPERATURE),
+                    "value": kwargs[ATTR_COLOR_TEMP_KELVIN],
+                }
+            )
 
         # HS Color
         if ATTR_HS_COLOR in kwargs and self._has_dp(DP_RED):
             rgb_color = color_util.color_hs_to_RGB(*kwargs[ATTR_HS_COLOR])
-            payloads.append({"uid": self._get_dp_uid(DP_RED), "value": round((rgb_color[0] / 255) * 100)})
-            payloads.append({"uid": self._get_dp_uid(DP_GREEN), "value": round((rgb_color[1] / 255) * 100)})
-            payloads.append({"uid": self._get_dp_uid(DP_BLUE), "value": round((rgb_color[2] / 255) * 100)})
+            payloads.append(
+                {
+                    "uid": self._get_dp_uid(DP_RED),
+                    "value": round((rgb_color[0] / 255) * 100),
+                }
+            )
+            payloads.append(
+                {
+                    "uid": self._get_dp_uid(DP_GREEN),
+                    "value": round((rgb_color[1] / 255) * 100),
+                }
+            )
+            payloads.append(
+                {
+                    "uid": self._get_dp_uid(DP_BLUE),
+                    "value": round((rgb_color[2] / 255) * 100),
+                }
+            )
 
         if payloads:
             # Use the more efficient multi-value call if available
