@@ -140,7 +140,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
                             self._attr_current_cover_position = ha_position
                             changed = True
                     elif dp_name == DP_SLAT_POSITION:
-                        # KORREKTUR: Gira-Lamellenposition (0=offen, 100=geschlossen) in HA-Position (100=offen, 0=geschlossen) umrechnen.
+                        # Invert: Gira (0=open, 100=closed) to HA (100=open, 0=closed)
                         gira_tilt_position = int(float(value))
                         ha_tilt_position = 100 - gira_tilt_position
                         if self._attr_current_cover_tilt_position != ha_tilt_position:
@@ -151,9 +151,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
                         if self._attr_is_moving != is_moving_now:
                             self._attr_is_moving = is_moving_now
                             changed = True
-                            if not is_moving_now:
-                                self._attr_is_opening = False
-                                self._attr_is_closing = False
+
                 except (ValueError, TypeError):
                     _LOGGER.warning(
                         "Could not parse value '%s' for cover DP %s on entity %s",
@@ -241,7 +239,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Set the cover tilt position."""
-        # KORREKTUR: HA-Lamellenposition in Gira-Position umrechnen.
+        # Invert: HA (100=open, 0=closed) to Gira (0=open, 100=closed)
         ha_tilt_position = kwargs[ATTR_TILT_POSITION]
         gira_tilt_position = 100 - ha_tilt_position
         _LOGGER.debug("Setting cover tilt %s to HA position %s (Gira: %s)", self.name, ha_tilt_position, gira_tilt_position)

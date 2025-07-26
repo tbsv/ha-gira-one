@@ -29,6 +29,7 @@ from .const import (
     DP_HVAC_HEATING_ACTIVE,
     DP_HVAC_MODE,
     DP_HVAC_ON_OFF,
+    DP_HVAC_STATUS_MODE,
     DP_TARGET_TEMP,
     GIRA_FUNCTION_TYPE_TO_HA_PLATFORM,
     GIRA_KNX_HVAC_MODE_COMFORT,
@@ -160,7 +161,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                         self._attr_target_temperature = float(value)
                     elif dp_name == DP_HVAC_ON_OFF:
                         self._is_on_dp_value = bool(int(value))
-                    elif dp_name == DP_HVAC_MODE:
+                    elif dp_name == DP_HVAC_STATUS_MODE:
                         self._current_gira_mode = int(value)
                     elif dp_name == DP_HVAC_HEATING_ACTIVE:
                         self._heating_active_dp_value = bool(int(value))
@@ -209,7 +210,6 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         elif HVACMode.COOL in self.hvac_modes:
             self._attr_hvac_mode = HVACMode.COOL
 
-        # 4. Preset Mode
         if self._attr_hvac_mode != HVACMode.OFF and self._current_gira_mode is not None:
             self._attr_preset_mode = GIRA_MODE_TO_HA_PRESET_MAP.get(
                 self._current_gira_mode
@@ -222,6 +222,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is not None:
             _LOGGER.debug("Setting temperature for %s to %s", self.name, temperature)
             await self._send_command(DP_TARGET_TEMP, temperature)
+            # Optimistic update for responsiveness
             self._attr_target_temperature = temperature
             self.async_write_ha_state()
 
@@ -230,7 +231,6 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         if (gira_mode_val := HA_PRESET_TO_GIRA_MODE_MAP.get(preset_mode)) is not None:
             _LOGGER.debug("Setting preset_mode for %s to %s", self.name, preset_mode)
             await self._send_command(DP_HVAC_MODE, gira_mode_val)
-            self._attr_preset_mode = preset_mode
             self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
@@ -246,6 +246,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         if self._can_write_dp(DP_HVAC_ON_OFF):
             _LOGGER.debug("Turning on climate device %s", self.name)
             await self._send_command(DP_HVAC_ON_OFF, 1)
+            # Optimistic update for responsiveness
             self._is_on_dp_value = True
             self._determine_hvac_and_preset_states()
             self.async_write_ha_state()
@@ -255,6 +256,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         if self._can_write_dp(DP_HVAC_ON_OFF):
             _LOGGER.debug("Turning off climate device %s", self.name)
             await self._send_command(DP_HVAC_ON_OFF, 0)
+            # Optimistic update for responsiveness
             self._is_on_dp_value = False
             self._determine_hvac_and_preset_states()
             self.async_write_ha_state()

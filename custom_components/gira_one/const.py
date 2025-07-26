@@ -56,7 +56,8 @@ DP_MOVEMENT = "Movement"
 DP_CURRENT_TEMP = "Current"
 DP_TARGET_TEMP = "Set-Point"
 DP_HVAC_ON_OFF = "OnOff"
-DP_HVAC_MODE = "Mode"  # Gira's HVAC mode (comfort, eco, etc.)
+DP_HVAC_MODE = "Mode"  # Write-only, to set the HVAC mode
+DP_HVAC_STATUS_MODE = "Status"  # Read-only, to get the current HVAC mode
 DP_HVAC_HEATING_ACTIVE = "Heating"  # Read-only, indicates if heating is active
 DP_HVAC_COOLING_ACTIVE = "Cooling"  # Read-only, indicates if cooling is active
 DP_FAN_SPEED = "Fan-Speed"  # For FanCoil functions
@@ -66,7 +67,7 @@ DP_FAN_SPEED = "Fan-Speed"  # For FanCoil functions
 # Custom preset name for protection mode
 PRESET_PROTECTION = "protection"
 
-# Gira KNX HVAC Mode constants (values for DP_HVAC_MODE)
+# Gira KNX HVAC Mode constants (values for DP_HVAC_MODE and DP_HVAC_STATUS_MODE)
 GIRA_KNX_HVAC_MODE_COMFORT = 1
 GIRA_KNX_HVAC_MODE_STANDBY = 2
 GIRA_KNX_HVAC_MODE_ECONOMY = 3
