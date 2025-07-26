@@ -1,6 +1,7 @@
 """API client for Gira IoT REST API."""
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 import aiohttp
@@ -38,6 +39,7 @@ class GiraApiClient:
         username: str | None,
         password: str | None,
         hass: HomeAssistant,
+        auth_error_callback: Callable[[], None] | None = None,
     ) -> None:
         """Initialize the API client."""
         self._host = host
@@ -49,6 +51,7 @@ class GiraApiClient:
         self._base_url = f"https://{self._host}/api"
         self._token: str | None = None
         self._client_id: str | None = None
+        self._auth_error_callback = auth_error_callback
 
     async def _request(
         self,
@@ -69,9 +72,7 @@ class GiraApiClient:
             if is_registration:
                 if not self._username or not self._password:
                     msg = "Username or password missing for registration."
-                    raise GiraApiAuthError(
-                        msg
-                    )
+                    raise GiraApiAuthError(msg)
                 auth = aiohttp.BasicAuth(self._username, self._password)
             elif self._token and not token_in_path:
                 if params is None:
@@ -79,9 +80,7 @@ class GiraApiClient:
                 params["token"] = self._token
             elif not self._token:
                 msg = f"Token missing for authenticated request to {path}"
-                raise GiraApiAuthError(
-                    msg
-                )
+                raise GiraApiAuthError(msg)
 
         _LOGGER.debug(
             "Request: %s %s (params=%s, json=%s)", method, url, params, json_data
@@ -129,21 +128,23 @@ class GiraApiClient:
                 error_message,
             )
             if status_code in [401, 403]:
+                # If we have a callback for auth errors, trigger it.
+                if self._auth_error_callback:
+                    self._auth_error_callback()
                 msg = f"Authentication failed: {error_message} (Code: {error_code})"
-                raise GiraApiAuthError(
-                    msg
-                )
+                raise GiraApiAuthError(msg)
             if status_code == 423:
                 msg = f"Device locked: {error_message} (Code: {error_code})"
-                raise GiraApiRequestError(
-                    msg
-                )
+                raise GiraApiRequestError(msg)
             msg = f"API Error {status_code}: [{error_code}] {error_message}"
-            raise GiraApiRequestError(
-                msg
-            )
+            raise GiraApiRequestError(msg)
 
         return status_code, response_data
+
+    def disable_auth_error_callback(self) -> None:
+        """Disable the auth error callback to prevent reload loops during cleanup."""
+        _LOGGER.debug("Disabling auth error callback.")
+        self._auth_error_callback = None
 
     async def check_api_availability(self) -> dict[str, Any]:
         """Check if the Gira IoT REST API is available."""

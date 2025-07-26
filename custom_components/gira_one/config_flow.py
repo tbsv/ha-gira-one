@@ -36,7 +36,9 @@ async def _async_validate_input(
     ha_instance_id = await async_get_instance_id(hass)
     client_id = f"{CLIENT_URN_PREFIX}:{ha_instance_id}"
 
-    api_client = GiraApiClient(host, username, password, hass)
+    api_client = GiraApiClient(
+        host, username, password, hass, auth_error_callback=None
+    )
 
     # Step 1: Check if the host is a Gira device (unauthenticated)
     await api_client.check_api_availability()

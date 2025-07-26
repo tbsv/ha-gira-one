@@ -52,7 +52,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     client_id = entry.data["client_id"]
     access_token = entry.data["access_token"]
 
-    api_client = GiraApiClient(host, username, password, hass)
+    @callback
+    def _handle_auth_error() -> None:
+        """Handle an authentication error by reloading the config entry."""
+        _LOGGER.warning(
+            "Gira API reported an authentication error. Reloading integration to refresh token."
+        )
+        hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
+
+    api_client = GiraApiClient(
+        host, username, password, hass, auth_error_callback=_handle_auth_error
+    )
     api_client.set_credentials(token=access_token, client_id=client_id)
 
     try:
@@ -74,7 +84,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.exception("Failed to re-register client: %s", e)
             return False
     except (GiraApiConnectionError, GiraApiRequestError) as e:
-        _LOGGER.exception("Failed to connect or communicate with Gira One Server: %s", e)
+        _LOGGER.exception(
+            "Failed to connect or communicate with Gira One Server: %s", e
+        )
         return False  # Defer setup, HA will retry
 
     _LOGGER.info("Successfully connected to Gira IoT API and fetched UI config.")
@@ -166,6 +178,9 @@ async def _async_cleanup_resources(hass: HomeAssistant, entry: ConfigEntry) -> N
     api_client: GiraApiClient = hass.data[DOMAIN][entry.entry_id].get(DATA_API_CLIENT)
     if not api_client:
         return
+
+    # Prevent re-auth loop
+    api_client.disable_auth_error_callback()
 
     _LOGGER.info("Cleaning up Gira One resources for %s", entry.title)
     try:
