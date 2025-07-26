@@ -151,6 +151,10 @@ class GiraCover(GiraOneEntity, CoverEntity):
                         if self._attr_is_moving != is_moving_now:
                             self._attr_is_moving = is_moving_now
                             changed = True
+                            # Reset if moving is done
+                            if not is_moving_now:
+                                self._attr_is_opening = False
+                                self._attr_is_closing = False
 
                 except (ValueError, TypeError):
                     _LOGGER.warning(
