@@ -1,4 +1,4 @@
-aiohttp~=3.11.16
+aiohttp~=3.13.0
 async-timeout~=5.0.1
 colorlog==6.9.0
 homeassistant==2025.4.0
