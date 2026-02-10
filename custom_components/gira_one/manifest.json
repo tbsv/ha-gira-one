@@ -1,22 +1,20 @@
 {
-    "domain": "gira_one",
-    "name": "Gira One",
-    "documentation": "URL_ZU_DEINER_DOKU_ODER_REPO",
-    "issue_tracker": "URL_ZU_DEINEM_ISSUE_TRACKER",
-    "config_flow": true,
-    "iot_class": "local_push",
-    "version": "0.1.0",
-    "codeowners": [
-      "@tbsv"
-    ],
-    "requirements": [
-      "aiohttp",
-      "async_timeout"
-    ],
-    "dependencies": [
-      "http"
-    ],
-    "loggers": [
-      "custom_components.gira_one"
-    ]
-  }
+  "domain": "gira_one",
+  "name": "Gira One",
+  "documentation": "https://github.com/tbsv/gira_one",
+  "issue_tracker": "https://github.com/tbsv/gira_one/issues",
+  "config_flow": true,
+  "iot_class": "local_push",
+  "version": "0.1.0",
+  "codeowners": [
+    "@tbsv"
+  ],
+  "requirements": [
+    "aiohttp>=3.9.0",
+    "async_timeout>=4.0.0"
+  ],
+  "dependencies": [],
+  "loggers": [
+    "custom_components.gira_one"
+  ]
+}
