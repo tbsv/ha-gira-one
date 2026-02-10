@@ -59,7 +59,13 @@ def _build_location_map(
         
         # Valid functions in this location
         for func in location.get("functions", []):
-            if uid := func.get("uid"):
+            uid = None
+            if isinstance(func, str):
+                uid = func
+            elif isinstance(func, dict):
+                uid = func.get("uid")
+            
+            if uid:
                 location_map[uid] = name
         
         # Recursise into sub-locations
@@ -206,6 +212,10 @@ async def _async_register_callbacks(
 
 async def _async_cleanup_resources(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Centralized function to clean up resources, unregister client and callbacks."""
+    
+    if DOMAIN not in hass.data or entry.entry_id not in hass.data[DOMAIN]:
+        return
+
     api_client: GiraApiClient = hass.data[DOMAIN][entry.entry_id].get(DATA_API_CLIENT)
     if not api_client:
         return
