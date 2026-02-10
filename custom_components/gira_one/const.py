@@ -21,6 +21,7 @@ CLIENT_URN_PREFIX = "urn:homeassistant:gira_one"
 # Data
 DATA_API_CLIENT = "api_client"
 DATA_UI_CONFIG = "ui_config"
+DATA_LOCATION_MAP = "location_map"
 
 # Supported Gira function types to HA platforms mapping
 GIRA_FUNCTION_TYPE_TO_HA_PLATFORM = {

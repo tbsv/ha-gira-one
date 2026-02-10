@@ -1,7 +1,7 @@
 """Gira One integration."""
 
 import logging
-from typing import Never
+from typing import Any, Never
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
@@ -23,6 +23,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_USERNAME,
     DATA_API_CLIENT,
+    DATA_LOCATION_MAP,
     DATA_UI_CONFIG,
     DOMAIN,
     EVENT_TYPE_PROJECT_CONFIG_CHANGED,
@@ -40,6 +41,32 @@ VALUE_CALLBACK_PATH = f"/api/{DOMAIN}/value_callback"
 
 # Used to signal entities that new data is available
 SIGNAL_DATA_UPDATE = f"{DOMAIN}_data_update"
+
+
+def _build_location_map(
+    locations: list[dict[str, Any]], current_path: str = ""
+) -> dict[str, str]:
+    """Recursively build a map of function UID to location path (suggested area)."""
+    location_map = {}
+    for location in locations:
+        name = location.get("displayName", "Unknown")
+        # If we have a hierarchy, we could combine names, e.g. "Floor 1 / Living Room"
+        # For HA Areas, usually the leaf name is what we want, or we let the user decide.
+        # But Gira often has "Floor" -> "Room". Providing just "Room" is usually best for "Area".
+        # If we want to be safe, we could do: full_name = f"{current_path} {name}".strip()
+        # Let's try to just use the current location name as the Area.
+        # If the user wants floors, they can manage that in HA.
+        
+        # Valid functions in this location
+        for func in location.get("functions", []):
+            if uid := func.get("uid"):
+                location_map[uid] = name
+        
+        # Recursise into sub-locations
+        if sub_locations := location.get("locations"):
+            location_map.update(_build_location_map(sub_locations, name))
+            
+    return location_map
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -69,6 +96,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Verify token is still valid by fetching UI config
         _LOGGER.debug("Attempting to fetch UI config with stored token.")
         ui_config = await api_client.get_ui_config()
+        # Parse locations
+        location_map = _build_location_map(ui_config.get("locations", []))
     except GiraApiAuthError:
         _LOGGER.warning(
             "Initial token seems invalid or expired, attempting to re-register client."
@@ -80,6 +109,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             api_client.set_credentials(token=new_token, client_id=client_id)
             _LOGGER.info("Client re-registered successfully, new token stored.")
             ui_config = await api_client.get_ui_config()  # Retry with new token
+            location_map = _build_location_map(ui_config.get("locations", []))
         except (GiraApiAuthError, GiraApiRequestError) as e:
             _LOGGER.exception("Failed to re-register client: %s", e)
             return False
@@ -94,6 +124,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_API_CLIENT: api_client,
         DATA_UI_CONFIG: ui_config,
+        DATA_LOCATION_MAP: location_map,
     }
 
     # Register device

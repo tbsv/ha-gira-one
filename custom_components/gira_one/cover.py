@@ -18,6 +18,7 @@ from .api import GiraApiClient
 from .const import (
     COVER,
     DATA_API_CLIENT,
+    DATA_LOCATION_MAP,
     DATA_UI_CONFIG,
     DP_MOVEMENT,
     DP_POSITION,
@@ -43,6 +44,9 @@ async def async_setup_entry(
     ui_config: dict[str, Any] = hass.data[config_entry.domain][config_entry.entry_id][
         DATA_UI_CONFIG
     ]
+    location_map: dict[str, str] = hass.data[config_entry.domain][config_entry.entry_id].get(
+        DATA_LOCATION_MAP, {}
+    )
 
     entities = []
     for function_data in ui_config.get("functions", []):
@@ -50,7 +54,10 @@ async def async_setup_entry(
             GIRA_FUNCTION_TYPE_TO_HA_PLATFORM.get(function_data.get("functionType"))
             == COVER
         ):
-            entities.append(GiraCover(config_entry, api_client, function_data))
+            suggested_area = location_map.get(function_data.get("uid"))
+            entities.append(
+                GiraCover(config_entry, api_client, function_data, suggested_area)
+            )
             _LOGGER.info(
                 "Adding Gira Cover: %s (UID: %s)",
                 function_data.get("displayName"),
@@ -70,9 +77,10 @@ class GiraCover(GiraOneEntity, CoverEntity):
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
         function_data: dict[str, Any],
+        suggested_area: str | None = None,
     ) -> None:
         """Initialize the Gira Cover."""
-        super().__init__(config_entry, api_client, function_data)
+        super().__init__(config_entry, api_client, function_data, suggested_area)
 
         self._attr_current_cover_position: int | None = None
         self._attr_current_cover_tilt_position: int | None = None

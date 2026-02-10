@@ -28,11 +28,13 @@ class GiraOneEntity(Entity, ABC):
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
         function_data: dict[str, Any],
+        suggested_area: str | None = None,
     ) -> None:
         """Initialize the base Gira One entity."""
         self._config_entry_id = config_entry.entry_id
         self._api = api_client
         self._function_data = function_data
+        self._attr_suggested_area = suggested_area
 
         self._attr_unique_id = function_data["uid"]
         self._attr_name = (

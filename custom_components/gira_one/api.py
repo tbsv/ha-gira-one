@@ -202,7 +202,7 @@ class GiraApiClient:
 
     async def get_ui_config(self) -> dict[str, Any]:
         """Get the UI configuration."""
-        params = {"expand": "dataPointFlags,locations,trades"}
+        params = {"expand": "dataPointFlags,locations,trades,parameters"}
         status, data = await self._request(
             "GET", f"/{API_VERSION}/uiconfig", params=params
         )
