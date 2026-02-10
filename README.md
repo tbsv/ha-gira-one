@@ -1,46 +1,63 @@
-# Notice
+# Gira One Integration for Home Assistant
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+[![HACS Badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-HAVE FUN! 😎
+This integration connects Home Assistant to a Gira One Server via the local REST API. It allows you to control and monitor Gira devices directly within Home Assistant and receives real-time status updates via callbacks (Local Push).
 
-## Why?
+## Features
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+This integration supports the following device platforms:
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+*   **Light**:
+    *   Turn on/off
+    *   Set brightness (dimming)
+    *   Adjust color temperature (for Tunable White lights)
+    *   Set color (for RGB/W lights)
+*   **Cover**:
+    *   Open, close, and stop
+    *   Set a specific position
+    *   Set slat position (tilt)
+*   **Climate**:
+    *   Read the current room temperature
+    *   Set the target temperature
+    *   Display the heating/cooling mode
+    *   Read the current preset mode
+    *   Set preset modes (e.g. Comfort, Eco, Away, Protection)
 
-## What?
+## Prerequisites
 
-This repository contains multiple files, here is a overview:
+1.  A **Gira One Server** accessible on your local network.
+2.  A **user account** on the Gira One Server with the necessary permissions to control the devices.
+3.  **Home Assistant must have an external URL configured with SSL** (e.g., `https://example.duckdns.org`). This is mandatory for the Gira Server to send status changes (e.g., when a light is switched manually) back to Home Assistant.
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`custom_components/integration_blueprint/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+## Installation (Recommended via HACS)
 
-## How?
+1.  Ensure you have HACS (Home Assistant Community Store) installed.
+2.  In HACS, go to "Integrations".
+3.  Click the three dots in the top right corner and select "Custom repositories".
+4.  Paste the URL of this GitHub repository into the "Repository" field.
+5.  Select "Integration" as the category.
+6.  Click "Add".
+7.  The "Gira One" integration will now appear in the list. Click "Install".
+8.  Restart Home Assistant when prompted.
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `integration_blueprint` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Integration Blueprint` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+## Configuration
 
-## Next steps
+After installation, the integration is configured via the UI:
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon) to https://github.com/home-assistant/brands.
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+1.  Go to **Settings** > **Devices & Services**.
+2.  Click the **"+ Add Integration"** button in the bottom right.
+3.  Search for "Gira One" and select the integration.
+4.  In the configuration dialog, enter the following details:
+    *   **Host**: The IP address or hostname of your Gira One Server.
+    *   **Username**: The username for your Gira One account.
+    *   **Password**: The password for your Gira One account.
+5.  Click "Submit".
+
+The integration will now connect to your Gira One Server and automatically add all compatible devices to Home Assistant.
+
+## Support & Contribution
+
+This is a community-developed integration and is not officially supported by Gira.
+
+If you encounter any issues or have a feature request, please create an issue on GitHub.
