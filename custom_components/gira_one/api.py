@@ -109,11 +109,15 @@ class GiraApiClient:
         _LOGGER.debug("Response status from %s %s: %s", method, url, status_code)
 
         try:
-            response_data = await response.json() if response.content else {}
-        except aiohttp.ContentTypeError:
+            response_data = await response.json()
+        except (aiohttp.ContentTypeError, aiohttp.ClientResponseError):
             response_text = await response.text()
-            _LOGGER.warning("Non-JSON response from %s: %s", url, response_text)
-            response_data = {"error_text": response_text}
+            if not response_text:
+                # Empty response body with 200 OK often means success but no data for Gira APIs
+                response_data = {}
+            else:
+                _LOGGER.warning("Non-JSON response from %s: %s", url, response_text)
+                response_data = {"error_text": response_text}
 
         if not (200 <= status_code < 300):
             error_info = response_data.get("error", {})
