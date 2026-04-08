@@ -154,8 +154,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register callback views with HA and callback URLs with the Gira device
     if not await _async_register_callbacks(hass, entry, api_client):
         raise ConfigEntryNotReady(
-            "Could not register Gira One callback URLs. "
-            "Ensure Home Assistant has an external SSL URL configured."
+            "Could not register Gira One callback URLs. Ensure Home Assistant "
+            "is reachable from the Gira One Server via an HTTPS URL"
         )
 
     # Ensure the Gira client is cleanly unregistered when HA shuts down
@@ -231,12 +231,17 @@ async def _async_register_callbacks(
     """Register callback URLs and views with Home Assistant and the Gira device."""
     try:
         base_url = get_url(
-            hass, require_ssl=True, allow_internal=False, prefer_external=True
+            hass,
+            require_ssl=True,
+            allow_internal=True,
+            allow_external=True,
+            prefer_external=True,
         )
     except NoURLAvailableError:
         _LOGGER.error(
-            "Cannot determine external SSL URL for Gira callbacks. "
-            "Please configure Home Assistant's external_url with SSL"
+            "Cannot determine an HTTPS URL for Gira callbacks. The Gira One "
+            "Server only accepts HTTPS callback URLs. Configure either an "
+            "internal_url or external_url with https:// in Home Assistant"
         )
         return False
 
