@@ -12,7 +12,7 @@ PLATFORMS = [LIGHT, COVER, CLIMATE]
 # Configuration
 CONF_HOST = "host"
 CONF_USERNAME = "username"
-CONF_PASSWORD = "password"
+CONF_PASSWORD = "password"  # noqa: S105
 
 # API constants
 API_VERSION = "v2"

@@ -44,9 +44,9 @@ async def async_setup_entry(
     ui_config: dict[str, Any] = hass.data[config_entry.domain][config_entry.entry_id][
         DATA_UI_CONFIG
     ]
-    location_map: dict[str, str] = hass.data[config_entry.domain][config_entry.entry_id].get(
-        DATA_LOCATION_MAP, {}
-    )
+    location_map: dict[str, str] = hass.data[config_entry.domain][
+        config_entry.entry_id
+    ].get(DATA_LOCATION_MAP, {})
 
     entities = []
     for function_data in ui_config.get("functions", []):
@@ -132,7 +132,9 @@ class GiraCover(GiraOneEntity, CoverEntity):
                         dp_value_info["uid"], dp_value_info["value"]
                     )
         except Exception as e:
-            _LOGGER.exception("Error fetching initial state for cover %s: %s", self.name, e)
+            _LOGGER.exception(
+                "Error fetching initial state for cover %s: %s", self.name, e
+            )
 
     def _update_state_from_dp_value(self, dp_uid_updated: str, value: Any) -> bool:
         """Update internal state. Returns True if state changed."""
@@ -221,7 +223,12 @@ class GiraCover(GiraOneEntity, CoverEntity):
         ha_position = kwargs[ATTR_POSITION]
         # Invert: HA (100=open, 0=closed) to Gira (0=open, 100=closed)
         gira_position = 100 - ha_position
-        _LOGGER.debug("Setting cover %s to HA position %s (Gira: %s)", self.name, ha_position, gira_position)
+        _LOGGER.debug(
+            "Setting cover %s to HA position %s (Gira: %s)",
+            self.name,
+            ha_position,
+            gira_position,
+        )
         await self._send_command(DP_POSITION, gira_position)
 
         # Optimistic update
@@ -254,7 +261,12 @@ class GiraCover(GiraOneEntity, CoverEntity):
         # Invert: HA (100=open, 0=closed) to Gira (0=open, 100=closed)
         ha_tilt_position = kwargs[ATTR_TILT_POSITION]
         gira_tilt_position = 100 - ha_tilt_position
-        _LOGGER.debug("Setting cover tilt %s to HA position %s (Gira: %s)", self.name, ha_tilt_position, gira_tilt_position)
+        _LOGGER.debug(
+            "Setting cover tilt %s to HA position %s (Gira: %s)",
+            self.name,
+            ha_tilt_position,
+            gira_tilt_position,
+        )
         await self._send_command(DP_SLAT_POSITION, gira_tilt_position)
 
         # Optimistic update

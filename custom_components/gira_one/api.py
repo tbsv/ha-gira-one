@@ -1,11 +1,11 @@
 """API client for Gira IoT REST API."""
 
+import asyncio
 import logging
 from collections.abc import Callable
 from typing import Any
 
 import aiohttp
-import async_timeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -87,7 +87,7 @@ class GiraApiClient:
         )
 
         try:
-            async with async_timeout.timeout(15):
+            async with asyncio.timeout(15):
                 response = await self._session.request(
                     method,
                     url,
@@ -97,13 +97,13 @@ class GiraApiClient:
                     auth=auth,
                 )
         except aiohttp.ClientError as err:
-            _LOGGER.exception("Request failed for %s %s: %s", method, url, err)
+            _LOGGER.debug("Request failed for %s %s: %s", method, url, err)
             msg = f"Request failed: {err}"
             raise GiraApiConnectionError(msg) from err
-        except TimeoutError:
-            _LOGGER.exception("Request timed out for %s %s", method, url)
+        except TimeoutError as err:
+            _LOGGER.debug("Request timed out for %s %s", method, url)
             msg = f"Request timed out: {url}"
-            raise GiraApiConnectionError(msg)
+            raise GiraApiConnectionError(msg) from err
 
         status_code = response.status
         _LOGGER.debug("Response status from %s %s: %s", method, url, status_code)
