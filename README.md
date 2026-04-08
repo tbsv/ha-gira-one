@@ -17,6 +17,7 @@ This integration connects Home Assistant to a **Gira One Server** via its local 
 | **Light** | On/off, brightness (dimming), color temperature (tunable white), RGB/W color |
 | **Cover** | Open, close, stop, set position, set tilt (slat) position — for roller shutters and venetian blinds |
 | **Climate** | Current temperature, target temperature, HVAC mode, preset modes (Comfort, Eco/Night, Away/Standby, Protection) |
+| **Sensor** | Current room temperature exposed as a dedicated sensor entity per Gira climate function (for graphing and automations) |
 
 ### Supported Gira function types
 

@@ -7,7 +7,8 @@ DOMAIN = "gira_one"
 LIGHT = "light"
 COVER = "cover"
 CLIMATE = "climate"
-PLATFORMS = [LIGHT, COVER, CLIMATE]
+SENSOR = "sensor"
+PLATFORMS = [LIGHT, COVER, CLIMATE, SENSOR]
 
 # Configuration
 CONF_HOST = "host"
