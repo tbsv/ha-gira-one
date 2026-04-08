@@ -138,9 +138,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
 
         if self._can_write_dp(DP_HVAC_MODE):
             features |= ClimateEntityFeature.PRESET_MODE
-            self._attr_preset_modes = sorted(
-                set(GIRA_MODE_TO_HA_PRESET_MAP.values())
-            )
+            self._attr_preset_modes = sorted(set(GIRA_MODE_TO_HA_PRESET_MAP.values()))
 
         self._attr_supported_features = features
 

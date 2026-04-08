@@ -48,9 +48,9 @@ async def async_setup_entry(
     ui_config: dict[str, Any] = hass.data[config_entry.domain][config_entry.entry_id][
         DATA_UI_CONFIG
     ]
-    location_map: dict[str, str] = hass.data[config_entry.domain][config_entry.entry_id].get(
-        DATA_LOCATION_MAP, {}
-    )
+    location_map: dict[str, str] = hass.data[config_entry.domain][
+        config_entry.entry_id
+    ].get(DATA_LOCATION_MAP, {})
 
     entities = []
     for function_data in ui_config.get("functions", []):
@@ -147,7 +147,9 @@ class GiraLight(GiraOneEntity, LightEntity):
                         dp_value_info["uid"], dp_value_info["value"]
                     )
         except Exception as e:
-            _LOGGER.exception("Error fetching initial state for light %s: %s", self.name, e)
+            _LOGGER.exception(
+                "Error fetching initial state for light %s: %s", self.name, e
+            )
 
     def _update_state_from_dp_value(self, dp_uid_updated: str, value: Any) -> bool:
         """Update internal state. Returns True if state changed."""

@@ -8,12 +8,39 @@ select = [
 ]
 
 ignore = [
-    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
-    "D203", # no-blank-line-before-class (incompatible with formatter)
-    "D212", # multi-line-summary-first-line (incompatible with formatter)
-    "COM812", # incompatible with formatter
-    "ISC001", # incompatible with formatter
-    "ARG002", # unused-method-argument
+    "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed
+    "ARG002",   # unused-method-argument
+    "BLE001",   # blind-except
+    "COM812",   # incompatible with formatter
+    "D203",     # no-blank-line-before-class (incompatible with formatter)
+    "D205",     # 1 blank line required between summary line and description
+    "D212",     # multi-line-summary-first-line (incompatible with formatter)
+    "D213",     # multi-line-summary-second-line
+    "D400",     # first-line-period
+    "D401",     # first-line-imperative-mood
+    "D415",     # ends-in-punctuation
+    "E501",     # line-too-long (handled by formatter where possible)
+    "EM101",    # raw-string-in-exception
+    "EM102",    # f-string-in-exception
+    "FBT001",   # boolean-type-hint-positional-argument
+    "FBT002",   # boolean-default-value-positional-argument
+    "FBT003",   # boolean-positional-value-in-call
+    "ISC001",   # incompatible with formatter
+    "PLR0911",  # too-many-return-statements
+    "PLR0912",  # too-many-branches
+    "PLR0913",  # too-many-arguments
+    "PLR0915",  # too-many-statements
+    "PLR2004",  # magic-value-comparison (HTTP status codes are self-explanatory)
+    "RUF059",   # unused-unpacked-variable (used with status, data pattern)
+    "S101",     # assert
+    "SLF001",   # private-member-access
+    "TC001",    # typing-only-first-party-import
+    "TC002",    # typing-only-third-party-import
+    "TC003",    # typing-only-standard-library-import
+    "TRY003",   # raise-vanilla-args
+    "TRY300",   # try-consider-else
+    "TRY400",   # error-instead-of-exception
+    "TRY401",   # verbose-log-message
 ]
 
 [lint.flake8-pytest-style]

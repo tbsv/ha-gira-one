@@ -1,63 +1,91 @@
 # Gira One Integration for Home Assistant
 
-[![HACS Badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![GitHub Release](https://img.shields.io/github/v/release/tbsv/gira_one?display_name=tag&sort=semver)](https://github.com/tbsv/gira_one/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Validate](https://github.com/tbsv/gira_one/actions/workflows/validate.yml/badge.svg)](https://github.com/tbsv/gira_one/actions/workflows/validate.yml)
 
-This integration connects Home Assistant to a Gira One Server via the local REST API. It allows you to control and monitor Gira devices directly within Home Assistant and receives real-time status updates via callbacks (Local Push).
+This integration connects Home Assistant to a **Gira One Server** via its local REST API. It exposes lights, covers, and room thermostats as native Home Assistant entities and receives real-time status updates via callbacks (Local Push), so state changes made at the physical switch or in the Gira app are immediately reflected in Home Assistant.
+
+> [!IMPORTANT]
+> **Home Assistant must be reachable via an external HTTPS URL.** The Gira One Server pushes state updates back to Home Assistant via HTTP callbacks, and it only accepts SSL callback targets. If your Home Assistant instance has no external SSL URL configured, the integration will refuse to set up. A free DuckDNS + Let's Encrypt setup is sufficient.
 
 ## Features
 
-This integration supports the following device platforms:
+| Platform | Capabilities |
+|---|---|
+| **Light** | On/off, brightness (dimming), color temperature (tunable white), RGB/W color |
+| **Cover** | Open, close, stop, set position, set tilt (slat) position — for roller shutters and venetian blinds |
+| **Climate** | Current temperature, target temperature, HVAC mode, preset modes (Comfort, Eco/Night, Away/Standby, Protection) |
 
-*   **Light**:
-    *   Turn on/off
-    *   Set brightness (dimming)
-    *   Adjust color temperature (for Tunable White lights)
-    *   Set color (for RGB/W lights)
-*   **Cover**:
-    *   Open, close, and stop
-    *   Set a specific position
-    *   Set slat position (tilt)
-*   **Climate**:
-    *   Read the current room temperature
-    *   Set the target temperature
-    *   Display the heating/cooling mode
-    *   Read the current preset mode
-    *   Set preset modes (e.g. Comfort, Eco, Away, Protection)
+### Supported Gira function types
+
+Behind the scenes, the following Gira function types are mapped automatically:
+
+- `de.gira.schema.functions.Switch` → Light
+- `de.gira.schema.functions.KNX.Light` → Light
+- `de.gira.schema.functions.ColoredLight` → Light
+- `de.gira.schema.functions.TunableLight` → Light
+- `de.gira.schema.functions.Covering` → Cover
+- `de.gira.schema.functions.KNX.HeatingCooling` → Climate
+- `de.gira.schema.functions.KNX.FanCoil` → Climate
+- `de.gira.schema.functions.SaunaHeating` → Climate
 
 ## Prerequisites
 
-1.  A **Gira One Server** accessible on your local network.
-2.  A **user account** on the Gira One Server with the necessary permissions to control the devices.
-3.  **Home Assistant must have an external URL configured with SSL** (e.g., `https://example.duckdns.org`). This is mandatory for the Gira Server to send status changes (e.g., when a light is switched manually) back to Home Assistant.
+1. A **Gira One Server** accessible on your local network.
+2. A **user account** on the Gira One Server with permissions to control the target devices.
+3. **Home Assistant reachable via an external HTTPS URL** (see important note above).
 
-## Installation (Recommended via HACS)
+## Installation
 
-1.  Ensure you have HACS (Home Assistant Community Store) installed.
-2.  In HACS, go to "Integrations".
-3.  Click the three dots in the top right corner and select "Custom repositories".
-4.  Paste the URL of this GitHub repository into the "Repository" field.
-5.  Select "Integration" as the category.
-6.  Click "Add".
-7.  The "Gira One" integration will now appear in the list. Click "Install".
-8.  Restart Home Assistant when prompted.
+### Via HACS (recommended)
+
+1. Make sure [HACS](https://hacs.xyz/) is installed.
+2. In HACS → *Integrations*, click the three-dot menu → *Custom repositories*.
+3. Add this repository URL and select *Integration* as category.
+4. Install **Gira One** and restart Home Assistant.
+
+### Manual
+
+1. Copy the `custom_components/gira_one` folder into your Home Assistant `config/custom_components/` directory.
+2. Restart Home Assistant.
 
 ## Configuration
 
-After installation, the integration is configured via the UI:
+After installation, add the integration via the UI:
 
-1.  Go to **Settings** > **Devices & Services**.
-2.  Click the **"+ Add Integration"** button in the bottom right.
-3.  Search for "Gira One" and select the integration.
-4.  In the configuration dialog, enter the following details:
-    *   **Host**: The IP address or hostname of your Gira One Server.
-    *   **Username**: The username for your Gira One account.
-    *   **Password**: The password for your Gira One account.
-5.  Click "Submit".
+1. Go to **Settings → Devices & Services**.
+2. Click **+ Add Integration** and search for *Gira One*.
+3. Enter:
+   - **Host**: IP address or hostname of your Gira One Server.
+   - **Username** / **Password**: A Gira One user account with sufficient permissions.
+4. Submit.
 
-The integration will now connect to your Gira One Server and automatically add all compatible devices to Home Assistant.
+Compatible devices will be added automatically and grouped by room (using the Gira project's location names as suggested areas).
+
+## Troubleshooting
+
+**Setup fails with "Cannot determine external SSL URL".**
+Home Assistant has no external HTTPS URL configured. Set one under *Settings → System → Network → Home Assistant URL → External URL* and make sure it uses `https://`.
+
+**Setup fails with "invalid_auth".**
+Double-check the Gira One username and password. Note that some Gira user roles cannot register new API clients.
+
+**Setup fails with "device_locked" (HTTP 423).**
+The Gira One Server is currently being configured from the Gira project planner or is otherwise locked. Wait until the lock is released and retry.
+
+**State changes from the Gira side don't show up in Home Assistant.**
+The Gira Server cannot reach Home Assistant on the callback URL. Verify:
+- Your external URL uses HTTPS with a certificate trusted by the Gira Server.
+- Port forwarding / reverse proxy passes through to Home Assistant.
+- No firewall rule is blocking outbound HTTPS from the Gira Server to Home Assistant.
+
+**Password changed on the Gira side.**
+The integration will detect the invalid token and start a reauth flow automatically — a notification will appear in Home Assistant prompting for new credentials.
 
 ## Support & Contribution
 
-This is a community-developed integration and is not officially supported by Gira.
+This is a community-developed integration and is **not officially supported by Gira**.
 
-If you encounter any issues or have a feature request, please create an issue on GitHub.
+If you encounter bugs or have feature requests, please open an issue on GitHub. Pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for details.

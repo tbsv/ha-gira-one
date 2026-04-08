@@ -8,6 +8,14 @@
           "username": "Benutzername",
           "password": "Passwort"
         }
+      },
+      "reauth_confirm": {
+        "title": "Gira One Server neu authentifizieren",
+        "description": "Die Zugangsdaten für den Gira One Server unter {host} sind nicht mehr gültig. Bitte geben Sie Benutzernamen und Passwort erneut ein.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
       }
     },
     "error": {
@@ -19,7 +27,8 @@
       "unknown": "Ein unbekannter Fehler ist aufgetreten."
     },
     "abort": {
-      "already_configured": "Dieser Gira One Server ist bereits konfiguriert."
+      "already_configured": "Dieser Gira One Server ist bereits konfiguriert.",
+      "reauth_successful": "Neuauthentifizierung erfolgreich."
     }
   },
   "entity": {
