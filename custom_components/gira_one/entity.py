@@ -37,12 +37,15 @@ class GiraOneEntity(Entity, ABC):
         self._attr_suggested_area = suggested_area
 
         self._attr_unique_id = function_data["uid"]
-        self._attr_name = (
-            function_data.get("displayName") or f"Gira Entity {self._attr_unique_id}"
+        # Do NOT set _attr_name here. With _attr_has_entity_name = True and
+        # _attr_name = None, HA treats this as the primary entity of the device
+        # and the entity_id becomes "{platform}.{device_name}" (no duplication).
+        self._display_name = (
+            function_data.get("displayName") or f"Gira Entity {function_data['uid']}"
         )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id)},
-            name=self.name,
+            name=self._display_name,
             manufacturer="Gira",
             model=function_data.get("functionType", "Unknown Gira Function"),
             # 'via_device' links this functional device with the main server device (bridge).
@@ -74,14 +77,14 @@ class GiraOneEntity(Entity, ABC):
         if not dp_uid:
             _LOGGER.error(
                 "Cannot send command for '%s': Data point '%s' not found.",
-                self.name,
+                self._display_name,
                 dp_name,
             )
             return
 
         _LOGGER.debug(
             "Sending command for '%s': DP '%s' (UID %s) -> value '%s'",
-            self.name,
+            self._display_name,
             dp_name,
             dp_uid,
             value,
@@ -90,7 +93,10 @@ class GiraOneEntity(Entity, ABC):
             await self._api.set_value(dp_uid, value)
         except GiraApiClientError as e:
             _LOGGER.exception(
-                "Error sending command for '%s' (DP: '%s'): %s", self.name, dp_name, e
+                "Error sending command for '%s' (DP: '%s'): %s",
+                self._display_name,
+                dp_name,
+                e,
             )
 
     async def async_added_to_hass(self) -> None:
