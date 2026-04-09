@@ -9,7 +9,6 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/tbsv/gira_one/issues",
   "loggers": ["custom_components.gira_one"],
-  "quality_scale": "bronze",
   "requirements": [],
   "version": "1.0.0"
 }
