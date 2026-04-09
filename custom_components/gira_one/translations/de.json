@@ -32,6 +32,14 @@
     }
   },
   "entity": {
+    "sensor": {
+      "current_temperature": {
+        "name": "Aktuelle Temperatur"
+      },
+      "target_temperature": {
+        "name": "Zieltemperatur"
+      }
+    },
     "climate": {
       "gira_one": {
         "state_attributes": {
