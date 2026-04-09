@@ -30,7 +30,5 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # Remove this 'ignore' key when you have added brand images
-          ignore: brands
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
