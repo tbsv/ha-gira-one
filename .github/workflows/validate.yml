@@ -3,7 +3,7 @@ name: Validate
 on:
   workflow_dispatch:
   schedule:
-    - cron:  "0 0 * * *"
+    - cron: "0 0 * * *"
   push:
     branches:
       - main
@@ -11,7 +11,8 @@ on:
     branches:
       - main
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   hassfest: # https://developers.home-assistant.io/blog/2020/04/16/hassfest
@@ -28,6 +29,9 @@ jobs:
     name: HACS validation
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
       - name: Run HACS validation
         uses: hacs/action@d556e736723344f83838d08488c983a15381059a # 22.5.0
         with:

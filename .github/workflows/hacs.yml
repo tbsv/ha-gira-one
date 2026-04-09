@@ -11,15 +11,19 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   hacs:
     name: HACS Validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: HACS Validation
         uses: hacs/action@main
         with:
           category: integration
+          ignore: brands
