@@ -5,7 +5,6 @@
   "config_flow": true,
   "dependencies": ["http"],
   "documentation": "https://github.com/tbsv/gira_one",
-  "integration_type": "hub",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/tbsv/gira_one/issues",
   "loggers": ["custom_components.gira_one"],
