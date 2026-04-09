@@ -15,20 +15,22 @@ permissions:
   contents: read
 
 jobs:
-  hassfest: # https://developers.home-assistant.io/blog/2020/04/16/hassfest
+  hassfest:
     name: Hassfest validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: home-assistant/actions/hassfest@master
 
-  hacs: # https://github.com/hacs/action
+  hacs:
     name: HACS validation
     runs-on: ubuntu-latest
     steps:
-      - name: HACS validation
-        uses: hacs/action@main
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
         with:
           category: integration
-          # Remove this 'ignore' key when you have added brand images for your integration to https://github.com/home-assistant/brands
+          # Remove this 'ignore' key when you have added brand images
           ignore: brands
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
