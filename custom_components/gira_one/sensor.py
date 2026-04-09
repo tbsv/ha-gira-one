@@ -26,10 +26,17 @@ from .const import (
     DATA_UI_CONFIG,
     DOMAIN,
     DP_CURRENT_TEMP,
+    DP_TARGET_TEMP,
     GIRA_FUNCTION_TYPE_TO_HA_PLATFORM,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Maps data point name to (translation_key, unique_id_suffix)
+_TEMP_SENSOR_TYPES: dict[str, tuple[str, str]] = {
+    DP_CURRENT_TEMP: ("current_temperature", "current_temperature"),
+    DP_TARGET_TEMP: ("target_temperature", "target_temperature"),
+}
 
 
 async def async_setup_entry(
@@ -52,56 +59,59 @@ async def async_setup_entry(
             continue
 
         data_points = {dp["name"]: dp for dp in function_data.get("dataPoints", [])}
-        if DP_CURRENT_TEMP not in data_points:
-            continue
-
         suggested_area = location_map.get(function_data.get("uid"))
-        entities.append(
-            GiraCurrentTemperatureSensor(
-                config_entry,
-                api_client,
-                function_data,
-                data_points[DP_CURRENT_TEMP]["uid"],
-                suggested_area,
+
+        for dp_name, (translation_key, uid_suffix) in _TEMP_SENSOR_TYPES.items():
+            if dp_name not in data_points:
+                continue
+            entities.append(
+                GiraTemperatureSensor(
+                    config_entry=config_entry,
+                    api_client=api_client,
+                    function_data=function_data,
+                    dp_uid=data_points[dp_name]["uid"],
+                    translation_key=translation_key,
+                    uid_suffix=uid_suffix,
+                    suggested_area=suggested_area,
+                )
             )
-        )
-        _LOGGER.info(
-            "Adding Gira current temperature sensor: %s (UID: %s)",
-            function_data.get("displayName"),
-            function_data.get("uid"),
-        )
+            _LOGGER.info(
+                "Adding Gira %s sensor: %s (UID: %s)",
+                dp_name,
+                function_data.get("displayName"),
+                function_data.get("uid"),
+            )
 
     async_add_entities(entities)
 
 
-class GiraCurrentTemperatureSensor(SensorEntity):
-    """Current temperature sensor exposed alongside a Gira climate function."""
+class GiraTemperatureSensor(SensorEntity):
+    """Temperature sensor exposed alongside a Gira climate function."""
 
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    _attr_translation_key = "current_temperature"
 
     def __init__(
         self,
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
         function_data: dict[str, Any],
-        current_temp_dp_uid: str,
+        dp_uid: str,
+        translation_key: str,
+        uid_suffix: str,
         suggested_area: str | None,
     ) -> None:
         """Initialize the temperature sensor."""
         self._config_entry_id = config_entry.entry_id
         self._api = api_client
         self._function_uid = function_data["uid"]
-        self._dp_uid = current_temp_dp_uid
+        self._dp_uid = dp_uid
 
-        # Use a different unique_id from the climate entity but link to the
-        # same device via shared identifiers.
-        self._attr_unique_id = f"{self._function_uid}_current_temperature"
-        self._attr_name = "Current temperature"
+        self._attr_unique_id = f"{self._function_uid}_{uid_suffix}"
+        self._attr_translation_key = translation_key
         self._attr_suggested_area = suggested_area
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._function_uid)},
@@ -134,12 +144,14 @@ class GiraCurrentTemperatureSensor(SensorEntity):
             self.async_write_ha_state()
 
     async def _fetch_initial_state(self) -> None:
-        """Fetch the initial value of the current temperature data point."""
+        """Fetch the initial value of the temperature data point."""
         try:
             data = await self._api.get_value(self._function_uid)
         except GiraApiClientError as err:
             _LOGGER.debug(
-                "Error fetching initial temperature for %s: %s", self._attr_name, err
+                "Error fetching initial state for sensor %s: %s",
+                self._attr_unique_id,
+                err,
             )
             return
 
@@ -149,14 +161,14 @@ class GiraCurrentTemperatureSensor(SensorEntity):
                 break
 
     def _set_value(self, value: Any) -> bool:
-        """Parse and store the temperature value, returning True if it changed."""
+        """Parse and store the temperature value, returning True if changed."""
         try:
             new_value = float(value)
         except (TypeError, ValueError):
             _LOGGER.warning(
-                "Could not parse temperature value '%s' for %s",
+                "Could not parse temperature value '%s' for sensor %s",
                 value,
-                self._attr_name,
+                self._attr_unique_id,
             )
             return False
 

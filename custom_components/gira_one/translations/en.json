@@ -35,6 +35,9 @@
     "sensor": {
       "current_temperature": {
         "name": "Current temperature"
+      },
+      "target_temperature": {
+        "name": "Target temperature"
       }
     },
     "climate": {
