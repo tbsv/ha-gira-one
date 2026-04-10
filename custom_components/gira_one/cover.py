@@ -133,7 +133,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
                     )
         except Exception as e:
             _LOGGER.exception(
-                "Error fetching initial state for cover %s: %s", self.name, e
+                "Error fetching initial state for cover %s: %s", self._display_name, e
             )
 
     def _update_state_from_dp_value(self, dp_uid_updated: str, value: Any) -> bool:
@@ -171,14 +171,14 @@ class GiraCover(GiraOneEntity, CoverEntity):
                         "Could not parse value '%s' for cover DP %s on entity %s",
                         value,
                         dp_name,
-                        self.name,
+                        self._display_name,
                     )
                 break
         return changed
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        _LOGGER.debug("Opening cover %s", self.name)
+        _LOGGER.debug("Opening cover %s", self._display_name)
         if self._has_dp(DP_UP_DOWN):
             await self._send_command(DP_UP_DOWN, 0)
         else:
@@ -193,7 +193,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover."""
-        _LOGGER.debug("Closing cover %s", self.name)
+        _LOGGER.debug("Closing cover %s", self._display_name)
         if self._has_dp(DP_UP_DOWN):
             await self._send_command(DP_UP_DOWN, 1)
         else:
@@ -209,7 +209,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
         if self._has_dp(DP_STEP_UP_DOWN):
-            _LOGGER.debug("Stopping cover %s", self.name)
+            _LOGGER.debug("Stopping cover %s", self._display_name)
             await self._send_command(DP_STEP_UP_DOWN, 1)
 
         # Optimistic update
@@ -225,7 +225,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
         gira_position = 100 - ha_position
         _LOGGER.debug(
             "Setting cover %s to HA position %s (Gira: %s)",
-            self.name,
+            self._display_name,
             ha_position,
             gira_position,
         )
@@ -249,7 +249,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
     async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
         """Stop the cover tilt."""
         if self._has_dp(DP_STEP_UP_DOWN):
-            _LOGGER.debug("Stopping cover tilt on %s", self.name)
+            _LOGGER.debug("Stopping cover tilt on %s", self._display_name)
             await self._send_command(DP_STEP_UP_DOWN, 1)
 
         # Optimistic update
@@ -263,7 +263,7 @@ class GiraCover(GiraOneEntity, CoverEntity):
         gira_tilt_position = 100 - ha_tilt_position
         _LOGGER.debug(
             "Setting cover tilt %s to HA position %s (Gira: %s)",
-            self.name,
+            self._display_name,
             ha_tilt_position,
             gira_tilt_position,
         )

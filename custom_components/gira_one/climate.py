@@ -153,7 +153,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                     )
         except Exception as e:
             _LOGGER.exception(
-                "Error fetching initial state for climate %s: %s", self.name, e
+                "Error fetching initial state for climate %s: %s", self._display_name, e
             )
 
     def _update_state_from_dp_value(self, dp_uid_updated: str, value: Any) -> bool:
@@ -180,7 +180,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
                         "Could not parse value '%s' for climate DP %s on entity %s",
                         value,
                         dp_name,
-                        self.name,
+                        self._display_name,
                     )
                 break
 
@@ -227,7 +227,9 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is not None:
-            _LOGGER.debug("Setting temperature for %s to %s", self.name, temperature)
+            _LOGGER.debug(
+                "Setting temperature for %s to %s", self._display_name, temperature
+            )
             await self._send_command(DP_TARGET_TEMP, temperature)
             # Optimistic update for responsiveness
             self._attr_target_temperature = temperature
@@ -236,13 +238,15 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
         if (gira_mode_val := HA_PRESET_TO_GIRA_MODE_MAP.get(preset_mode)) is not None:
-            _LOGGER.debug("Setting preset_mode for %s to %s", self.name, preset_mode)
+            _LOGGER.debug(
+                "Setting preset_mode for %s to %s", self._display_name, preset_mode
+            )
             await self._send_command(DP_HVAC_MODE, gira_mode_val)
             self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new target hvac mode."""
-        _LOGGER.debug("Setting hvac_mode for %s to %s", self.name, hvac_mode)
+        _LOGGER.debug("Setting hvac_mode for %s to %s", self._display_name, hvac_mode)
         if hvac_mode == HVACMode.OFF:
             await self.async_turn_off()
         elif hvac_mode in self.hvac_modes:
@@ -251,7 +255,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_turn_on(self) -> None:
         """Turn the climate device on."""
         if self._can_write_dp(DP_HVAC_ON_OFF):
-            _LOGGER.debug("Turning on climate device %s", self.name)
+            _LOGGER.debug("Turning on climate device %s", self._display_name)
             await self._send_command(DP_HVAC_ON_OFF, 1)
             # Optimistic update for responsiveness
             self._is_on_dp_value = True
@@ -261,7 +265,7 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
     async def async_turn_off(self) -> None:
         """Turn the climate device off."""
         if self._can_write_dp(DP_HVAC_ON_OFF):
-            _LOGGER.debug("Turning off climate device %s", self.name)
+            _LOGGER.debug("Turning off climate device %s", self._display_name)
             await self._send_command(DP_HVAC_ON_OFF, 0)
             # Optimistic update for responsiveness
             self._is_on_dp_value = False

@@ -148,7 +148,7 @@ class GiraLight(GiraOneEntity, LightEntity):
                     )
         except Exception as e:
             _LOGGER.exception(
-                "Error fetching initial state for light %s: %s", self.name, e
+                "Error fetching initial state for light %s: %s", self._display_name, e
             )
 
     def _update_state_from_dp_value(self, dp_uid_updated: str, value: Any) -> bool:
