@@ -7,8 +7,9 @@ DOMAIN = "gira_one"
 LIGHT = "light"
 COVER = "cover"
 CLIMATE = "climate"
+SWITCH = "switch"
 SENSOR = "sensor"
-PLATFORMS = [LIGHT, COVER, CLIMATE, SENSOR]
+PLATFORMS = [LIGHT, SWITCH, COVER, CLIMATE, SENSOR]
 
 # Configuration
 CONF_HOST = "host"
@@ -26,7 +27,7 @@ DATA_LOCATION_MAP = "location_map"
 
 # Supported Gira function types to HA platforms mapping
 GIRA_FUNCTION_TYPE_TO_HA_PLATFORM = {
-    "de.gira.schema.functions.Switch": LIGHT,
+    "de.gira.schema.functions.Switch": SWITCH,
     "de.gira.schema.functions.KNX.Light": LIGHT,
     "de.gira.schema.functions.ColoredLight": LIGHT,
     "de.gira.schema.functions.TunableLight": LIGHT,
