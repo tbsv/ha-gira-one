@@ -96,9 +96,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         entry.async_start_reauth(hass)
 
-    api_client = GiraApiClient(
-        host, username, password, hass, auth_error_callback=_handle_auth_error
-    )
+    api_client = GiraApiClient(host, username, password, hass)
     api_client.set_credentials(token=access_token, client_id=client_id)
 
     try:
@@ -137,6 +135,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     location_map = _build_location_map(ui_config.get("locations", []))
 
     _LOGGER.info("Successfully connected to Gira IoT API and fetched UI config")
+
+    # Activate auth error callback only after setup succeeds.
+    # During setup, token refresh is handled inline — firing the callback
+    # would start a spurious reauth flow.
+    api_client.set_auth_error_callback(_handle_auth_error)
 
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_API_CLIENT: api_client,
@@ -264,8 +267,15 @@ async def _async_register_callbacks(
     return True
 
 
-async def _async_cleanup_resources(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Remove callbacks and unregister the client on unload/shutdown."""
+async def _async_cleanup_resources(
+    hass: HomeAssistant, entry: ConfigEntry, *, unregister: bool = False
+) -> None:
+    """Remove callbacks and optionally unregister the client.
+
+    By default the client is kept registered so the stored token remains
+    valid across restarts.  Pass ``unregister=True`` only when the config
+    entry is being permanently removed.
+    """
     entry_data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     if not entry_data:
         return
@@ -282,10 +292,31 @@ async def _async_cleanup_resources(hass: HomeAssistant, entry: ConfigEntry) -> N
         await api_client.remove_callbacks()
     except GiraApiClientError as err:
         _LOGGER.warning("Error removing Gira callbacks: %s", err)
+
+    if unregister:
+        try:
+            await api_client.unregister_client()
+        except GiraApiClientError as err:
+            _LOGGER.warning("Error unregistering Gira client: %s", err)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Unregister the client when the config entry is permanently removed."""
+    host = entry.data[CONF_HOST]
+    username = entry.data[CONF_USERNAME]
+    password = entry.data[CONF_PASSWORD]
+    client_id = entry.data.get("client_id")
+    access_token = entry.data.get("access_token")
+
+    if not access_token or not client_id:
+        return
+
+    api_client = GiraApiClient(host, username, password, hass)
+    api_client.set_credentials(token=access_token, client_id=client_id)
     try:
         await api_client.unregister_client()
-    except GiraApiClientError as err:
-        _LOGGER.warning("Error unregistering Gira client: %s", err)
+    except GiraApiClientError:
+        _LOGGER.warning("Could not unregister client during entry removal")
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

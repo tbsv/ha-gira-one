@@ -145,6 +145,12 @@ class GiraApiClient:
 
         return status_code, response_data
 
+    def set_auth_error_callback(
+        self, callback: Callable[[], None] | None
+    ) -> None:
+        """Set or clear the auth error callback."""
+        self._auth_error_callback = callback
+
     def disable_auth_error_callback(self) -> None:
         """Disable the auth error callback to prevent reload loops during cleanup."""
         _LOGGER.debug("Disabling auth error callback.")
