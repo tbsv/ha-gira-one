@@ -4,9 +4,9 @@
   "codeowners": ["@tbsv"],
   "config_flow": true,
   "dependencies": ["http"],
-  "documentation": "https://github.com/tbsv/gira_one",
+  "documentation": "https://github.com/tbsv/ha-gira-one",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/tbsv/gira_one/issues",
+  "issue_tracker": "https://github.com/tbsv/ha-gira-one/issues",
   "loggers": ["custom_components.gira_one"],
   "requirements": [],
   "version": "1.0.4"

@@ -1,9 +1,9 @@
 # Gira One Integration for Home Assistant
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/v/release/tbsv/gira_one?display_name=tag&sort=semver)](https://github.com/tbsv/gira_one/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/tbsv/ha-gira-one?display_name=tag&sort=semver)](https://github.com/tbsv/ha-gira-one/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Validate](https://github.com/tbsv/gira_one/actions/workflows/validate.yml/badge.svg)](https://github.com/tbsv/gira_one/actions/workflows/validate.yml)
+[![Validate](https://github.com/tbsv/ha-gira-one/actions/workflows/validate.yml/badge.svg)](https://github.com/tbsv/ha-gira-one/actions/workflows/validate.yml)
 
 This integration connects Home Assistant to a **Gira One Server** via its local REST API. It is based on the [Gira IoT REST API specification](https://partner.gira.de/data3/Gira_IoT_REST_API_v2_DE.pdf).
 It exposes lights, covers, and room thermostats as native Home Assistant entities and receives real-time status updates via callbacks (Local Push), so state changes made at the physical switch or in the Gira app are immediately reflected in Home Assistant.
