@@ -5,7 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Validate](https://github.com/tbsv/gira_one/actions/workflows/validate.yml/badge.svg)](https://github.com/tbsv/gira_one/actions/workflows/validate.yml)
 
-This integration connects Home Assistant to a **Gira One Server** via its local REST API. It exposes lights, covers, and room thermostats as native Home Assistant entities and receives real-time status updates via callbacks (Local Push), so state changes made at the physical switch or in the Gira app are immediately reflected in Home Assistant.
+This integration connects Home Assistant to a **Gira One Server** via its local REST API. It is based on the [Gira IoT REST API specification](https://partner.gira.de/data3/Gira_IoT_REST_API_v2_DE.pdf).
+It exposes lights, covers, and room thermostats as native Home Assistant entities and receives real-time status updates via callbacks (Local Push), so state changes made at the physical switch or in the Gira app are immediately reflected in Home Assistant.
 
 > [!IMPORTANT]
 > **Home Assistant must be reachable from the Gira One Server via an HTTPS URL.** The Gira One Server pushes state updates back to Home Assistant via HTTP callbacks and explicitly rejects non-HTTPS targets. Either an *internal* or an *external* URL works, as long as it uses `https://` and the Gira Server can reach it on the network. The integration will refuse to set up if no HTTPS URL is configured.
@@ -14,6 +15,7 @@ This integration connects Home Assistant to a **Gira One Server** via its local 
 
 | Platform | Capabilities |
 |---|---|
+| **Switch** | On/off |
 | **Light** | On/off, brightness (dimming), color temperature (tunable white), RGB/W color |
 | **Cover** | Open, close, stop, set position, set tilt (slat) position — for roller shutters and venetian blinds |
 | **Climate** | Current temperature, target temperature, HVAC mode, preset modes (Comfort, Eco/Night, Away/Standby, Protection) |
@@ -23,7 +25,7 @@ This integration connects Home Assistant to a **Gira One Server** via its local 
 
 Behind the scenes, the following Gira function types are mapped automatically:
 
-- `de.gira.schema.functions.Switch` → Light
+- `de.gira.schema.functions.Switch` → Switch
 - `de.gira.schema.functions.KNX.Light` → Light
 - `de.gira.schema.functions.ColoredLight` → Light
 - `de.gira.schema.functions.TunableLight` → Light
@@ -90,3 +92,8 @@ The integration will detect the invalid token and start a reauth flow automatica
 This is a community-developed integration and is **not officially supported by Gira**.
 
 If you encounter bugs or have feature requests, please open an issue on GitHub. Pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Trademarks
+
+Gira® and the Gira logo are trademarks of Gira Giersiepen GmbH & Co. KG.
+This project is not affiliated with or endorsed by Gira.
