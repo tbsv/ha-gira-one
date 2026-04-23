@@ -42,6 +42,21 @@ Report a bug by [opening a new issue](../../issues/new/choose); it's that easy!
 
 People *love* thorough bug reports. I'm not even kidding.
 
+## Use Conventional Commits
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) and
+[release-please](https://github.com/googleapis/release-please) for automated releases.
+
+Format: `<type>: <description>`
+
+| Type | Version Bump | Example |
+|------|-------------|---------|
+| `fix:` | Patch (1.0.x) | `fix: resolve re-auth loop` |
+| `feat:` | Minor (1.x.0) | `feat: add switch platform support` |
+| `feat!:` | Major (x.0.0) | `feat!: redesign configuration flow` |
+| `chore:` | None | `chore: update dependencies` |
+| `docs:` | None | `docs: update README` |
+
 ## Use a Consistent Coding Style
 
 Use [black](https://github.com/ambv/black) to make sure the code follows the style.
