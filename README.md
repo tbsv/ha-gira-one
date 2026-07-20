@@ -96,4 +96,5 @@ If you encounter bugs or have feature requests, please open an issue on GitHub. 
 ## Trademarks
 
 Gira® and the Gira logo are trademarks of Gira Giersiepen GmbH & Co. KG.
-This project is not affiliated with or endorsed by Gira.
+This project is not affiliated with or endorsed by Gira. See [NOTICE.md](NOTICE.md)
+for details on the brand assets included in this repository.
