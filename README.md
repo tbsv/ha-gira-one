@@ -44,10 +44,11 @@ Behind the scenes, the following Gira function types are mapped automatically:
 
 ### Via HACS (recommended)
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tbsv&repository=ha-gira-one&category=integration)
+
 1. Make sure [HACS](https://hacs.xyz/) is installed.
-2. In HACS → *Integrations*, click the three-dot menu → *Custom repositories*.
-3. Add this repository URL and select *Integration* as category.
-4. Install **Gira One** and restart Home Assistant.
+2. Click the badge above (or in HACS → *Integrations*, click the three-dot menu → *Custom repositories* and add this repository URL with *Integration* as category).
+3. Install **Gira One** and restart Home Assistant.
 
 ### Manual
 
